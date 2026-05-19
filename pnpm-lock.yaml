@@ -681,10 +681,23 @@ importers:
         version: 4.1.4(@opentelemetry/api@1.9.1)(@types/node@22.19.17)(@vitest/coverage-v8@4.1.4)(vite@7.3.2(@types/node@22.19.17)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3))
 
   eval:
+    dependencies:
+      fs-extra:
+        specifier: 'catalog:'
+        version: 11.3.4
+      simple-git:
+        specifier: 'catalog:'
+        version: 3.36.0
+      yargs:
+        specifier: ^17.4.1
+        version: 17.7.2
     devDependencies:
       '@fern-api/configs':
         specifier: workspace:*
         version: link:../packages/configs
+      '@types/fs-extra':
+        specifier: 'catalog:'
+        version: 11.0.4
       '@types/node':
         specifier: 'catalog:'
         version: 22.19.17
@@ -700,9 +713,6 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 4.1.4(@opentelemetry/api@1.9.1)(@types/node@22.19.17)(@vitest/coverage-v8@4.1.4)(vite@7.3.2(@types/node@22.19.17)(jiti@2.6.1)(tsx@4.21.0)(yaml@2.8.3))
-      yargs:
-        specifier: ^17.4.1
-        version: 17.7.2
 
   generators/base:
     dependencies:
