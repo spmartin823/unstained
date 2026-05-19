@@ -1,6 +1,7 @@
 packages:
   - packages/**
   - generators/**
+  - eval
   - "!**/dist"
   - "!**/lib"
   - "!**/generated"
