@@ -1,3 +1,6 @@
 [submodule "stainless-equivalency-eval"]
 	path = stainless-equivalency-eval
 	url = https://github.com/spmartin823/stainless-equivalency-eval.git
+[submodule "marketing-site"]
+	path = marketing-site
+	url = https://github.com/spmartin823/unstained-marketing-site.git
