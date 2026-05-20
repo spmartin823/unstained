@@ -31,7 +31,8 @@ const baseConfig: TournamentConfig = {
     parentBranch: "main",
     roundLoopIntervalMs: 1000,
     scoringPollIntervalMs: 500,
-    maxRounds: null
+    maxRounds: null,
+    skipEte: false
 };
 
 let repoRoot: string;

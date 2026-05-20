@@ -23,5 +23,6 @@
   "parentBranch": "main",
   "roundLoopIntervalMs": 60000,
   "scoringPollIntervalMs": 30000,
-  "maxRounds": 1
+  "maxRounds": 1,
+  "skipEte": true
 }
