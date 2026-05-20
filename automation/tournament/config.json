@@ -1,7 +1,7 @@
 {
-  "roundDurationHours": 2,
-  "graceMinutes": 15,
-  "workersPerRound": 3,
+  "roundDurationHours": 0.5,
+  "graceMinutes": 10,
+  "workersPerRound": 2,
   "scorers": 2,
   "dockerConcurrency": 2,
   "tieEpsilon": 0.005,
@@ -23,5 +23,6 @@
   "parentBranch": "main",
   "roundLoopIntervalMs": 60000,
   "scoringPollIntervalMs": 30000,
-  "maxRounds": null
+  "maxRounds": 1,
+  "skipEte": true
 }

@@ -17,7 +17,8 @@ const REQUIRED_KEYS: ReadonlyArray<keyof TournamentConfig> = [
     "parentBranch",
     "roundLoopIntervalMs",
     "scoringPollIntervalMs",
-    "maxRounds"
+    "maxRounds",
+    "skipEte"
 ];
 
 export async function loadConfig(configPath: string): Promise<TournamentConfig> {

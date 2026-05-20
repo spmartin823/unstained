@@ -69,6 +69,7 @@ export interface TournamentConfig {
     readonly roundLoopIntervalMs: number;
     readonly scoringPollIntervalMs: number;
     readonly maxRounds: number | null;
+    readonly skipEte: boolean;
 }
 
 export interface TournamentPaths {

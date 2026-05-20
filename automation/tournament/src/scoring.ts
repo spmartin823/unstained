@@ -87,15 +87,20 @@ export class ScoringPool {
             return dq;
         }
 
-        const ete = await this.runEte(job);
-        if (ete === "fail") {
-            const score = emptyScore(job, "fail", null);
-            await this.writeScore(job, score);
-            return score;
+        let ete: EteOutcome;
+        if (this.ctx.config.skipEte) {
+            ete = "pass";
+        } else {
+            ete = await this.runEte(job);
+            if (ete === "fail") {
+                const score = emptyScore(job, "fail", null);
+                await this.writeScore(job, score);
+                return score;
+            }
         }
 
         const pairs = await this.runEvalMatrix(job);
-        const score = aggregateScore(job, "pass", null, pairs);
+        const score = aggregateScore(job, ete, null, pairs);
         await this.writeScore(job, score);
         return score;
     }
