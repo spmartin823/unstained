@@ -90,11 +90,48 @@ Don't write a strategy doc and then run out of time. Run **one** scoring cycle o
 
 The first real change wins the round, no matter how small. **A 0.001 lift on one symbol-coverage metric beats a perfect strategy note.**
 
-### Rough order of leverage
+### Current state of play (read this carefully)
 
-1. **Behavioral unlock.** Pick one (fixture, language) where Stainless's tests look approachable, and get Fern's output installable + importable. The eval needs a `package.json` in `fern-output/typescript/` — Fern's local output currently doesn't emit one. Adding `package.json` emission to the TS SDK generator is a candidate behavioral unlock.
-2. **Signature parity.** Look at failing `signature-parity` metric data — it produces a list of mismatched symbols. Root causes often live in IR codegen.
-3. **Symbol / file / structural** are easy points but bounded. Once you're at ~95% you can't go higher without re-architecting.
+As of 2026-05-20 ~20:00 UTC, the tournament has plateaued at `t2=0.5175` after two prior generator merges (`package.json` emission, `LICENSE` staging). The breakdown:
+
+```
+papr-typescript:    sig=1.0   sym=0.089  file=0.019  struct=0.031   behavioral=null
+papr-python:        sig=1.0   sym=0.028  file=0      struct=0       behavioral=null
+honcho-typescript:  sig=1.0   sym=0.065  file=0.015  struct=0       behavioral=null
+honcho-python:      sig=1.0   sym=0.030  file=0      struct=0       behavioral=null
+lumaai-typescript:  ALL NULL  (Fern OpenAPI importer fails on union types)
+lumaai-python:      ALL NULL  (same)
+```
+
+**Two big lifts are available.**
+
+### Lift 1: Match more symbol names on papr (and honcho TS)
+
+Symbol coverage is computed by **exact name match**. Right now Stainless emits 313 TS symbols for papr; Fern emits 239; only 28 match. The 285 missing fall into three buckets:
+
+1. **API-named client class.** Stainless emits a class named `Papr` (`Honcho`, `Lumaai`, …). Fern emits `paprClient` (note suffix). See `generators/typescript/sdk/generator/src/declaration-referencers/SdkRootClientClassDeclarationReferencer.ts`:
+   ```ts
+   public getExportedName(): string {
+       return this.namingOverride ?? `${this.namespaceExport}Client`;
+   }
+   ```
+   If you make this also export an alias without the `Client` suffix (or change the default), you gain one direct symbol match per fixture.
+
+2. **API method shortcuts.** Stainless's `Papr` class has `Papr.get`, `Papr.post`, `Papr.patch`, `Papr.put`, `Papr.delete`, `Papr.request`, `Papr.buildRequest`, `Papr.fetchWithTimeout`, `Papr.buildURL`, `Papr.withOptions`. Fern's `Client` doesn't expose these as public methods. Adding even 3-4 of these to Fern's root client would add ~3-4 symbol matches per fixture.
+
+3. **Error class hierarchy.** Stainless emits a deep error hierarchy:
+   - `PaprError` (org-named top-level)
+   - `APIError`, `APIError.generate`
+   - `APIUserAbortError`, `APIConnectionError`, `APIConnectionTimeoutError`
+   - `AuthenticationError`, `PermissionDeniedError`, `ConflictError`, `RateLimitError`, `ContentTooLargeError`, `ForbiddenError`, `UnauthorizedError`, `UnsupportedMediaTypeError`
+   - `PaprApiError`, `PaprApiTimeoutError`
+   - `isAbortError`, `handleNonStatusCodeError`
+
+   Fern emits a smaller set (`BadRequestError`, `NotFoundError`, `UnprocessableEntityError`, `InternalServerError` already match). Emitting per-HTTP-status-code error classes with these specific names + an `APIError` base + an `APIConnectionError` + abort-related helpers would add ~10+ symbol matches per fixture.
+
+### Lift 2: Make lumaai generate at all
+
+Both lumaai pairs are 0 because Fern's OpenAPI importer fails with 7 errors like "Type AudioGenerationRequest is not defined" on lumaai's `__package__.yml`. The root cause is in Fern's OpenAPI importer creating a union (`GenerationRequest`) whose members reference types that the importer didn't materialize as components. Fix candidates live in `packages/cli/api-importers/openapi/openapi-ir/` — look for how `oneOf` discriminator unions resolve member type refs. If you unblock lumaai, you go from 0 → ~0.5 on TWO pairs (lift ~0.17 to overall t2 by itself).
 
 ### Generator defaults policy (NON-NEGOTIABLE)
 
