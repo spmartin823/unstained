@@ -148,39 +148,73 @@ export class ScoringPool {
 
     private async rebuildFern(job: ScoringJob): Promise<void> {
         const env = pnpmEnv(this.ctx.paths);
-        const start = Date.now();
-        const result = await runCaptured(this.ctx.paths.pnpmBinary, ["fern:build"], {
-            cwd: job.worktree,
-            env,
-            timeoutMs: 20 * 60 * 1000
-        });
-        const logPath = join(this.ctx.paths.logsDir, `scoring-${job.sha}-rebuild.log`);
         const MAX = 1_000_000;
         const truncate = (s: string): string =>
             s.length > MAX ? `${s.slice(0, MAX)}\n[... truncated ${s.length - MAX} bytes ...]` : s;
-        try {
-            await ensureDir(this.ctx.paths.logsDir);
-            await (await import("node:fs/promises")).writeFile(
-                logPath,
+        const { writeFile } = await import("node:fs/promises");
+        await ensureDir(this.ctx.paths.logsDir);
+
+        // Two-part rebuild:
+        //   1) pnpm fern:build → packages/cli/cli/dist/prod/cli.cjs
+        //   2) generators/typescript/sdk/cli dockerTagLatest → local image
+        //      'fernapi/fern-typescript-sdk:latest' that fern generate --local
+        //      picks up instead of the published one.
+        //
+        // Without (2) the generator runs the published Docker image regardless
+        // of the worker's source edits, so symbol/file/structural metrics
+        // never move. Python uses a different build pipeline (pyenv-managed,
+        // no pnpm script) — skipped for now; TS-only rebuild means workers
+        // can only move TS-side metrics.
+        const steps: Array<{
+            name: string;
+            cwd: string;
+            args: string[];
+            timeoutMs: number;
+        }> = [
+            {
+                name: "fern-cli",
+                cwd: job.worktree,
+                args: ["fern:build"],
+                timeoutMs: 20 * 60 * 1000
+            },
+            {
+                name: "ts-sdk-docker",
+                cwd: `${job.worktree}/generators/typescript/sdk/cli`,
+                args: ["run", "dockerTagLatest"],
+                timeoutMs: 20 * 60 * 1000
+            }
+        ];
+
+        const sections: string[] = [];
+        for (const step of steps) {
+            const start = Date.now();
+            const result = await runCaptured(this.ctx.paths.pnpmBinary, step.args, {
+                cwd: step.cwd,
+                env,
+                timeoutMs: step.timeoutMs
+            });
+            sections.push(
                 [
+                    `=== ${step.name} ===`,
+                    `cwd=${step.cwd}`,
+                    `cmd=pnpm ${step.args.join(" ")}`,
                     `exit=${result.exitCode}`,
-                    `sha=${job.sha}`,
-                    `branch=${job.branch}`,
                     `duration_ms=${Date.now() - start}`,
                     "--- stdout ---",
                     truncate(result.stdout ?? ""),
                     "--- stderr ---",
                     truncate(result.stderr ?? "")
-                ].join("\n"),
-                "utf8"
+                ].join("\n")
             );
+        }
+        const logPath = join(this.ctx.paths.logsDir, `scoring-${job.sha}-rebuild.log`);
+        try {
+            await writeFile(logPath, sections.join("\n\n"), "utf8");
         } catch {
             /* best-effort */
         }
-        // Non-fatal: if the rebuild fails, fall through to the eval anyway.
-        // The eval will either use the mirrored prebuilt binary (so the
-        // worker's changes won't surface) or itself fail with a logged error.
-        // We log the rebuild result either way so failures are diagnosable.
+        // Non-fatal: if any step fails, fall through to the eval anyway.
+        // The eval will produce whatever it can; logs are inspectable for diagnosis.
     }
 
     private async runEte(job: ScoringJob): Promise<EteOutcome> {
@@ -300,23 +334,31 @@ export class ScoringPool {
 
 interface EvalReportFile {
     readonly metrics?: {
+        // Eval emits these exact keys (run.ts ScorecardMetrics): behavioral,
+        // signature, symbol, file, structural. Our interface mirrors them
+        // exactly — earlier camelCased aliases (signatureParity, etc.) silently
+        // dropped three of the five metrics on every scoring call.
         readonly behavioral?: { value: number | null };
-        readonly signatureParity?: { value: number | null };
-        readonly symbolCoverage?: { value: number | null };
-        readonly fileCoverage?: { value: number | null };
+        readonly signature?: { value: number | null };
+        readonly symbol?: { value: number | null };
+        readonly file?: { value: number | null };
         readonly structural?: { value: number | null };
     };
-    readonly composite?: number | null;
+    readonly composite?: { value?: number | null } | number | null;
 }
 
 function extractScorecard(report: EvalReportFile): EvalPairScorecard {
+    const composite =
+        typeof report.composite === "object" && report.composite != null
+            ? (report.composite.value ?? null)
+            : (report.composite ?? null);
     return {
         behavioral: report.metrics?.behavioral?.value ?? null,
-        signatureParity: report.metrics?.signatureParity?.value ?? null,
-        symbolCoverage: report.metrics?.symbolCoverage?.value ?? null,
-        fileCoverage: report.metrics?.fileCoverage?.value ?? null,
+        signatureParity: report.metrics?.signature?.value ?? null,
+        symbolCoverage: report.metrics?.symbol?.value ?? null,
+        fileCoverage: report.metrics?.file?.value ?? null,
         structural: report.metrics?.structural?.value ?? null,
-        composite: report.composite ?? null
+        composite
     };
 }
 
