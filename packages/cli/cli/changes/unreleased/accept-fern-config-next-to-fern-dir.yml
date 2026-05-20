@@ -1,0 +1,3 @@
+- summary: |
+    Accept fern.config.json placed next to the fern/ directory in addition to inside it. Some projects imported from other API tool conventions structure their workspace with the config alongside the directory; the CLI now finds the workspace in either layout.
+  type: fix

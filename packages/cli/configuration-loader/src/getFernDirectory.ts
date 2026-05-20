@@ -1,5 +1,5 @@
 import { FERN_DIRECTORY, PROJECT_CONFIG_FILENAME } from "@fern-api/configuration";
-import { AbsoluteFilePath, doesPathExist, join, RelativeFilePath } from "@fern-api/fs-utils";
+import { AbsoluteFilePath, dirname, doesPathExist, join, RelativeFilePath } from "@fern-api/fs-utils";
 import { findUp } from "find-up";
 
 export async function getFernDirectory(nameOverride?: string): Promise<AbsoluteFilePath | undefined> {
@@ -11,7 +11,13 @@ export async function getFernDirectory(nameOverride?: string): Promise<AbsoluteF
 
     if (await doesPathExist(join(absolutePathToFernDirectory, RelativeFilePath.of(PROJECT_CONFIG_FILENAME)))) {
         return absolutePathToFernDirectory;
-    } else {
-        return undefined;
     }
+    // Fallback: some projects (e.g. those imported from other API-tool conventions)
+    // place fern.config.json next to the fern/ directory rather than inside it.
+    // Accept that layout too.
+    const parentDir = dirname(absolutePathToFernDirectory);
+    if (await doesPathExist(join(parentDir, RelativeFilePath.of(PROJECT_CONFIG_FILENAME)))) {
+        return absolutePathToFernDirectory;
+    }
+    return undefined;
 }
