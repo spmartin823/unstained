@@ -18,6 +18,7 @@
             "!packages/cli/ai/src/baml_client/**",
             "!packages/cli/api-importers/conjure/conjure-sdk/**",
             "!packages/cli/api-importers/openapi/openapi-ir/src/sdk/**",
+            "!stainless-equivalency-eval/**",
             "!!.claude",
             "!!.cursor",
             "!!.cursorindexignore",

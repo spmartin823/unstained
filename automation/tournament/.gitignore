@@ -1,0 +1,10 @@
+# Build artifacts
+dist/
+*.tsbuildinfo
+
+# Runtime state created by the daemon (state.json, scores/, logs/, audit.jsonl, scoring/)
+runtime/
+
+# Editor/OS noise
+.DS_Store
+*.log
