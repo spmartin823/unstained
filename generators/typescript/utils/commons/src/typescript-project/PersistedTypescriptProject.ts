@@ -408,8 +408,19 @@ export class PersistedTypescriptProject {
 
         // Include package.json so the emitted dist tree is an installable npm package.
         // Without it consumers (and tooling like `npm install file:...`) cannot resolve
-        // the package name/version/entrypoints.
-        const ROOT_FILES_TO_INCLUDE = ["package.json", "README.md", "reference.md", "CONTRIBUTING.md"];
+        // the package name/version/entrypoints. LICENSE and CHANGELOG.md are surfaced so
+        // the staged tree matches the layout npm expects for a published package — npm
+        // will warn (or, depending on registry policy, reject) on missing LICENSE files,
+        // and tools that consume the dist directly (changelog viewers, package indexers)
+        // expect CHANGELOG.md at the package root.
+        const ROOT_FILES_TO_INCLUDE = [
+            "package.json",
+            "README.md",
+            "reference.md",
+            "CONTRIBUTING.md",
+            "CHANGELOG.md",
+            "LICENSE"
+        ];
         for (const filename of ROOT_FILES_TO_INCLUDE) {
             const src = join(this.directory, RelativeFilePath.of(filename));
             try {
