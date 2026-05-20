@@ -176,6 +176,36 @@ async function mirrorEvalBaselines(
             `rsync baselines failed to ${dstDir} (exit ${result.exitCode}); see ${mirrorLogPath}`
         );
     }
+
+    // The eval's translator emits a broken fern-input layout: fern.config.json
+    // ends up OUTSIDE fern/, but Fern's getFernDirectory() expects it INSIDE
+    // (it calls findUp('fern', {type:'directory'}) then checks
+    // <fern>/fern.config.json). Move fern.config.json into fern/ if needed.
+    const { readdir, rename, access } = await import("node:fs/promises");
+    const { constants } = await import("node:fs");
+    let fixtures: string[];
+    try {
+        fixtures = await readdir(dstDir);
+    } catch {
+        return;
+    }
+    for (const fixture of fixtures) {
+        const fernInput = `${dstDir}${fixture}/fern-input`;
+        const outerCfg = `${fernInput}/fern.config.json`;
+        const innerCfg = `${fernInput}/fern/fern.config.json`;
+        try {
+            await access(outerCfg, constants.F_OK);
+            // Outer exists; move it inside if inner doesn't already exist.
+            try {
+                await access(innerCfg, constants.F_OK);
+                // Both exist — leave alone.
+            } catch {
+                await rename(outerCfg, innerCfg);
+            }
+        } catch {
+            // No outer config; nothing to do.
+        }
+    }
 }
 
 async function initSubmodules(
