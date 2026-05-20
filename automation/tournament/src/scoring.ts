@@ -142,6 +142,28 @@ export class ScoringPool {
             env,
             timeoutMs: ETE_TIMEOUT_MS
         });
+        // Persist stdout+stderr so failures are diagnosable. Truncated at 1 MB
+        // each to keep logs manageable.
+        const logPath = join(this.ctx.paths.logsDir, `scoring-${job.sha}-ete.log`);
+        const MAX = 1_000_000;
+        const truncate = (s: string): string =>
+            s.length > MAX ? `${s.slice(0, MAX)}\n[... truncated ${s.length - MAX} bytes ...]` : s;
+        const body = [
+            `exit=${res.exitCode}`,
+            `sha=${job.sha}`,
+            `branch=${job.branch}`,
+            `worktree=${job.worktree}`,
+            "--- stdout ---",
+            truncate(res.stdout ?? ""),
+            "--- stderr ---",
+            truncate(res.stderr ?? "")
+        ].join("\n");
+        try {
+            await ensureDir(this.ctx.paths.logsDir);
+            await (await import("node:fs/promises")).writeFile(logPath, body, "utf8");
+        } catch {
+            /* logging is best-effort */
+        }
         return res.exitCode === 0 ? "pass" : "fail";
     }
 
@@ -176,6 +198,32 @@ export class ScoringPool {
             ],
             { cwd: job.worktree, env, timeoutMs: EVAL_TIMEOUT_MS }
         );
+        // Persist eval-pair output for diagnostics.
+        const logPath = join(
+            this.ctx.paths.logsDir,
+            `scoring-${job.sha}-${fixture}-${language}.log`
+        );
+        const MAX = 1_000_000;
+        const truncate = (s: string): string =>
+            s.length > MAX ? `${s.slice(0, MAX)}\n[... truncated ${s.length - MAX} bytes ...]` : s;
+        try {
+            await ensureDir(this.ctx.paths.logsDir);
+            await (await import("node:fs/promises")).writeFile(
+                logPath,
+                [
+                    `exit=${res.exitCode}`,
+                    `pair=${fixture}-${language}`,
+                    `sha=${job.sha}`,
+                    "--- stdout ---",
+                    truncate(res.stdout ?? ""),
+                    "--- stderr ---",
+                    truncate(res.stderr ?? "")
+                ].join("\n"),
+                "utf8"
+            );
+        } catch {
+            /* best-effort */
+        }
         if (res.exitCode !== 0) {
             return {
                 fixture,
