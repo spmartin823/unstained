@@ -1,6 +1,6 @@
 # Design: Stainless → Fern Migration Tournament (Phase 2)
 
-**Status:** Draft, scaffolding stage. Not yet running unattended.
+**Status:** Daemon implemented and end-to-end smoke-tested. Has not yet run a real overnight tournament against the Stainless eval. See README.md for run instructions.
 **Owner:** Seamus Martin (seamus@presspass.ai)
 **Phase 1 dependency:** `stainless-equivalency-eval/` submodule, merge commit `6fdb4ab`.
 **Date:** 2026-05-19.
@@ -317,34 +317,39 @@ Event types:
 | Mac sleeps mid-round | `caffeinate -di` issued at round start, killed at round end. Lid-close override → on wake, launchd resumes daemon, daemon reads state, continues. |
 | `pnpm` invocation hits Node-20 path | Daemon prefixes `PATH=/Users/.../v24.15.0/bin:$PATH` for all spawned shells. |
 
-## Initial scaffolding (this PR)
+## Implementation status
 
-**Fully implemented, unit-tested:**
-- `automation/tournament/src/selection.ts` — F-fitness ranking. Pure function.
-- `automation/tournament/src/allowlist.ts` — Glob-matched path check. Pure function.
-- `automation/tournament/src/types.ts` — shared types (Config, State, Score, Round, Worker).
-- `automation/tournament/__tests__/selection.test.ts` — 6+ scenarios.
-- `automation/tournament/__tests__/allowlist.test.ts` — allow/deny scenarios.
+**Fully implemented + tested:**
+- `src/selection.ts` — F-fitness ranking (pure function, 9 unit tests).
+- `src/allowlist.ts` — Glob-matched path check with traversal guard (pure function, 16 unit tests).
+- `src/types.ts` — All shared types.
+- `src/atomic-fs.ts` — Atomic JSON write (tmp + rename), JSONL appender, fileExists (8 unit tests).
+- `src/concurrency.ts` — Semaphore + abortable sleep (8 unit tests).
+- `src/paths.ts` — Resolves runtime/worktree/binary paths from repo root + env overrides.
+- `src/config.ts` — Config loader with required-key validation; worker.env formatter.
+- `src/audit.ts` — Typed event log appender.
+- `src/git.ts` — git wrappers: revParse, diff-name-only, worktree add/remove, branch ops, merge, push, guard-violation detector.
+- `src/spawn.ts` — child_process wrappers with log-file piping (logged streaming) and result-capture variants.
+- `src/round.ts` — `startRound`, `terminateWorker`, `cleanupRound`. Spawns headless `claude --print` with budget cap, system-prompt append, and tool allowlist.
+- `src/scoring.ts` — `ScoringPool` with `Semaphore`-bounded concurrent scorers + Docker concurrency cap; runs ETE then 6-pair eval matrix; atomic score writes; guard-violation pre-check.
+- `src/select-and-merge.ts` — `decideRound` (reads scores from disk, applies F) and `applyWinner` (path-allowlist check → merge OR push PR). 6 integration tests against real git repos.
+- `src/preflight.ts` — Validates claude/pnpm/git/parent branch/eval submodule/worktree root before starting.
+- `src/orchestrator.ts` — Daemon main: round loop, scoring poller, scoring pool, signal handlers, caffeinate, state recovery on restart, 3-failure circuit breaker.
 
-**Stubbed (signatures + types + TODO markers):**
-- `automation/tournament/src/orchestrator.ts` — daemon entry; main async function with the three loops outlined but not implemented.
-- `automation/tournament/src/round.ts` — `startRound()`, `cleanupRound()`.
-- `automation/tournament/src/scoring.ts` — `runEte()`, `runEvalMatrix()`, `aggregate()`.
+**End-to-end verified:**
+- `bin/smoke.sh` — runs the daemon in a temp git repo with `TOURNAMENT_SMOKE=1` (fake bash worker + synthetic scores). Validates full lifecycle: spawn → commit → scoreme → score → select → merge → cleanup → next-round. Currently passes for `maxRounds=2`.
 
-**Configuration + scaffolding files:**
-- `automation/tournament/config.json` — defaults from above.
-- `automation/tournament/package.json` — workspace member `@fern-api/tournament` with vitest, tsx, minimatch deps.
-- `automation/tournament/tsconfig.json` — strict TS.
-- `automation/tournament/vitest.config.ts` — vitest setup.
-- `automation/tournament/README.md` — how to run; how to stop; where logs live.
-- `automation/tournament/.gitignore` — ignore runtime state.
-- `automation/tournament/launchd/com.unstained.tournament.plist` — reference plist (commented, not installed by this PR).
-- `automation/tournament/prompts/tournament-worker.md` — the worker prompt.
+**Configuration / scaffolding:**
+- `config.json` — production defaults (3 workers × 2h × $30 budget = $360/night cap).
+- `config.smoke.json` — short-round smoke variant.
+- `package.json` — workspace member `@fern-api/tournament`.
+- `launchd/com.unstained.tournament.plist` — reference launchd plist; user edits paths and `launchctl load`s it.
+- `prompts/tournament-worker.md` — the worker prompt.
 
-**Not in this PR (deferred to follow-ups):**
-- Daemon's worker spawning, scoring fan-out, file watching, atomic writes, launchd installation script.
-- Round 0 / behavioral-unlock specialist workflow (intentionally skipped — workers figure this out under F pressure).
-- Cross-worker visibility, web UI, notifications.
+**Not yet in this PR (deferred):**
+- A real overnight run against the live Stainless eval. Requires bootstrapping the eval submodule's baselines (`pnpm --filter stainless-equivalency-eval bootstrap`) which clones third-party repos; would take 1-2h alone before the first scoring cycle.
+- A "Round 0 / behavioral-unlock specialist" warmup. Intentionally skipped — workers figure this out under F-fitness pressure.
+- Cross-worker visibility, web UI, push notifications.
 
 ## Verification path (before flipping the daemon on)
 
