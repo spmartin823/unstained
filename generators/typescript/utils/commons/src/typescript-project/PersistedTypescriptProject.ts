@@ -406,7 +406,10 @@ export class PersistedTypescriptProject {
             });
         }
 
-        const ROOT_FILES_TO_INCLUDE = ["README.md", "reference.md", "CONTRIBUTING.md"];
+        // Include package.json so the emitted dist tree is an installable npm package.
+        // Without it consumers (and tooling like `npm install file:...`) cannot resolve
+        // the package name/version/entrypoints.
+        const ROOT_FILES_TO_INCLUDE = ["package.json", "README.md", "reference.md", "CONTRIBUTING.md"];
         for (const filename of ROOT_FILES_TO_INCLUDE) {
             const src = join(this.directory, RelativeFilePath.of(filename));
             try {
