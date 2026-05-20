@@ -1,5 +1,5 @@
 {
-  "roundDurationHours": 0.5,
+  "roundDurationHours": 1,
   "graceMinutes": 10,
   "workersPerRound": 2,
   "scorers": 2,
@@ -29,6 +29,6 @@
   "parentBranch": "main",
   "roundLoopIntervalMs": 60000,
   "scoringPollIntervalMs": 30000,
-  "maxRounds": 2,
+  "maxRounds": 12,
   "skipEte": true
 }
