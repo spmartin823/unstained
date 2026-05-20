@@ -284,8 +284,12 @@ function nullPairScorecard(): EvalPairScorecard {
 }
 
 function pnpmEnv(paths: TournamentPaths): NodeJS.ProcessEnv {
+    // Keep HOME so pnpm/corepack honor user-level config (e.g. ~/.npmrc,
+    // ~/.config/corepack/). Without HOME, corepack defaults to /var/empty and
+    // breaks for some users — diagnosed by tournament worker r01-w02.
     return {
         PATH: `${paths.nodeBinaryDir}:${process.env.PATH ?? ""}`,
+        HOME: process.env.HOME ?? "",
         FORCE_COLOR: "0"
     };
 }
