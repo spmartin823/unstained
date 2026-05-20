@@ -38,8 +38,13 @@ export async function runPreflight(configPath: string): Promise<{ ok: boolean; i
         return { ok: false, issues };
     }
     const config = cfgResult.value;
-    const repoRoot = process.env.TOURNAMENT_REPO_ROOT ?? process.cwd();
-    const paths = resolvePaths({ repoRoot });
+    let paths;
+    try {
+        paths = resolvePaths({ repoRoot: process.env.TOURNAMENT_REPO_ROOT });
+    } catch (err) {
+        issues.push((err as Error).message);
+        return { ok: false, issues };
+    }
 
     const checks: Check[] = [
         {

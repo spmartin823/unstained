@@ -441,8 +441,7 @@ class Daemon {
 
 export async function main(configPath: string): Promise<void> {
     const config = await loadConfig(configPath);
-    const repoRoot = process.env.TOURNAMENT_REPO_ROOT ?? process.cwd();
-    const paths = resolvePaths({ repoRoot });
+    const paths = resolvePaths({ repoRoot: process.env.TOURNAMENT_REPO_ROOT });
     console.log(
         `[tournament] starting daemon: workers=${config.workersPerRound}, rounds=${config.roundDurationHours}h, model=${config.workerModel}, budget=$${config.workerBudgetUsd}`
     );
