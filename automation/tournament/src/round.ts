@@ -79,6 +79,51 @@ async function buildWorkerArgs(ctx: RoundContext, worktree: string): Promise<str
     ];
 }
 
+async function initSubmodules(
+    ctx: RoundContext,
+    worktree: string,
+    logPath: string
+): Promise<void> {
+    // git worktree add does not populate submodules in the new worktree.
+    // Without this, stainless-equivalency-eval/ exists as a gitlink path but
+    // its contents are empty in the worker worktree. pnpm install then drops
+    // it from the workspace ("No projects matched the filters") and every
+    // scoring call returns null metrics.
+    const env: NodeJS.ProcessEnv = {
+        PATH: `${ctx.paths.nodeBinaryDir}:${process.env.PATH ?? ""}`,
+        HOME: process.env.HOME ?? ""
+    };
+    const result = await runCaptured("git", ["submodule", "update", "--init", "--recursive"], {
+        cwd: worktree,
+        env,
+        timeoutMs: 5 * 60 * 1000
+    });
+    const status = result.exitCode === 0 ? "ok" : `fail-exit-${result.exitCode}`;
+    const submoduleLogPath = `${logPath}.submodule.log`;
+    try {
+        const { writeFile } = await import("node:fs/promises");
+        await writeFile(
+            submoduleLogPath,
+            [
+                `cwd=${worktree}`,
+                `status=${status}`,
+                "--- stdout ---",
+                result.stdout,
+                "--- stderr ---",
+                result.stderr
+            ].join("\n"),
+            "utf8"
+        );
+    } catch {
+        /* best-effort */
+    }
+    if (result.exitCode !== 0) {
+        throw new Error(
+            `git submodule update --init failed in ${worktree} (exit ${result.exitCode}); see ${submoduleLogPath}`
+        );
+    }
+}
+
 async function installDependencies(
     ctx: RoundContext,
     worktree: string,
@@ -180,6 +225,7 @@ export async function startRound(
 
         await ensureDir(ctx.paths.logsDir);
         await worktreeAdd(ctx.paths.repoRoot, worktree, branch, ctx.config.parentBranch);
+        await initSubmodules(ctx, worktree, logPath);
         await seedWorkerWorktree(ctx, worktree, roundNumber, worker, deadlineIso);
         await installDependencies(ctx, worktree, logPath);
 
