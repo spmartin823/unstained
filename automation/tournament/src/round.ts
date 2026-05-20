@@ -5,7 +5,7 @@ import { ensureDir, fileExists } from "./atomic-fs.js";
 import type { Auditor } from "./audit.js";
 import { workerEnvFor } from "./config.js";
 import { branchDelete, revParse, worktreeAdd, worktreeRemove } from "./git.js";
-import { type ProcessResult, type RunningProcess, spawnLogged } from "./spawn.js";
+import { type ProcessResult, type RunningProcess, runCaptured, spawnLogged } from "./spawn.js";
 import type { RoundState, TournamentConfig, TournamentPaths, WorkerState } from "./types.js";
 
 const WORKER_INVOCATION = "Begin the tournament round per the prompt in `.context/tournament-worker.md`. Read `.context/worker.env` first.";
@@ -79,6 +79,50 @@ async function buildWorkerArgs(ctx: RoundContext, worktree: string): Promise<str
     ];
 }
 
+async function installDependencies(
+    ctx: RoundContext,
+    worktree: string,
+    logPath: string
+): Promise<void> {
+    // Each git worktree gets a fresh checkout with no node_modules. Without
+    // this, both worker self-tests (pnpm compile, pnpm test) and daemon
+    // scoring (pnpm --filter stainless-equivalency-eval exec ...) fail because
+    // workspace dependencies aren't installed in the worktree.
+    const env: NodeJS.ProcessEnv = {
+        PATH: `${ctx.paths.nodeBinaryDir}:${process.env.PATH ?? ""}`,
+        HOME: process.env.HOME ?? ""
+    };
+    const result = await runCaptured(ctx.paths.pnpmBinary, ["install"], {
+        cwd: worktree,
+        env,
+        timeoutMs: 10 * 60 * 1000
+    });
+    const status = result.exitCode === 0 ? "ok" : `fail-exit-${result.exitCode}`;
+    const installLogPath = `${logPath}.install.log`;
+    try {
+        const { writeFile } = await import("node:fs/promises");
+        await writeFile(
+            installLogPath,
+            [
+                `cwd=${worktree}`,
+                `status=${status}`,
+                "--- stdout ---",
+                result.stdout,
+                "--- stderr ---",
+                result.stderr
+            ].join("\n"),
+            "utf8"
+        );
+    } catch {
+        /* best-effort */
+    }
+    if (result.exitCode !== 0) {
+        throw new Error(
+            `pnpm install failed in ${worktree} (exit ${result.exitCode}); see ${installLogPath}`
+        );
+    }
+}
+
 async function spawnWorker(
     ctx: RoundContext,
     worktree: string,
@@ -137,6 +181,7 @@ export async function startRound(
         await ensureDir(ctx.paths.logsDir);
         await worktreeAdd(ctx.paths.repoRoot, worktree, branch, ctx.config.parentBranch);
         await seedWorkerWorktree(ctx, worktree, roundNumber, worker, deadlineIso);
+        await installDependencies(ctx, worktree, logPath);
 
         const proc = await spawnWorker(ctx, worktree, logPath);
 
