@@ -6,10 +6,13 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "compile": "tsc --noEmit"
+    "compile": "tsc --noEmit",
+    "preflight": "tsx src/preflight.ts config.json",
+    "start": "tsx src/orchestrator.ts config.json"
   },
   "dependencies": {
-    "minimatch": "catalog:"
+    "minimatch": "catalog:",
+    "simple-git": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",

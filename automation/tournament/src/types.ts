@@ -63,6 +63,27 @@ export interface TournamentConfig {
     readonly languages: ReadonlyArray<Language>;
     readonly fixtures: ReadonlyArray<string>;
     readonly pathAllowlist: ReadonlyArray<string>;
+    readonly workerBudgetUsd: number;
+    readonly workerModel: string;
+    readonly parentBranch: string;
+    readonly roundLoopIntervalMs: number;
+    readonly scoringPollIntervalMs: number;
+    readonly maxRounds: number | null;
+}
+
+export interface TournamentPaths {
+    readonly repoRoot: string;
+    readonly runtimeRoot: string;
+    readonly stateFile: string;
+    readonly auditFile: string;
+    readonly scoresDir: string;
+    readonly logsDir: string;
+    readonly worktreeRoot: string;
+    readonly promptPath: string;
+    readonly claudeBinary: string;
+    readonly pnpmBinary: string;
+    readonly nodeBinaryDir: string;
+    readonly evalSubmoduleDir: string;
 }
 
 export interface WorkerState {

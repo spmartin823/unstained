@@ -685,6 +685,9 @@ importers:
       minimatch:
         specifier: '>=10.2.3'
         version: 10.2.5
+      simple-git:
+        specifier: 'catalog:'
+        version: 3.36.0
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
