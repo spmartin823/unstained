@@ -79,6 +79,54 @@ async function buildWorkerArgs(ctx: RoundContext, worktree: string): Promise<str
     ];
 }
 
+async function mirrorEvalBaselines(
+    ctx: RoundContext,
+    worktree: string,
+    logPath: string
+): Promise<void> {
+    // The eval submodule's baselines/ directory is gitignored and populated by
+    // `pnpm --filter stainless-equivalency-eval bootstrap`, which clones large
+    // third-party SDK repos (~5-15 min). The parent repoRoot already has them
+    // bootstrapped, so we rsync them into each worker worktree's submodule
+    // instead of re-bootstrapping every round.
+    const srcDir = `${ctx.paths.evalSubmoduleDir}/baselines/`;
+    const dstDir = `${worktree}/stainless-equivalency-eval/baselines/`;
+    const env: NodeJS.ProcessEnv = {
+        PATH: `${ctx.paths.nodeBinaryDir}:${process.env.PATH ?? ""}`,
+        HOME: process.env.HOME ?? ""
+    };
+    const result = await runCaptured(
+        "rsync",
+        ["-a", "--delete", srcDir, dstDir],
+        { cwd: worktree, env, timeoutMs: 5 * 60 * 1000 }
+    );
+    const status = result.exitCode === 0 ? "ok" : `fail-exit-${result.exitCode}`;
+    const mirrorLogPath = `${logPath}.baselines-mirror.log`;
+    try {
+        const { writeFile } = await import("node:fs/promises");
+        await writeFile(
+            mirrorLogPath,
+            [
+                `src=${srcDir}`,
+                `dst=${dstDir}`,
+                `status=${status}`,
+                "--- stdout ---",
+                result.stdout,
+                "--- stderr ---",
+                result.stderr
+            ].join("\n"),
+            "utf8"
+        );
+    } catch {
+        /* best-effort */
+    }
+    if (result.exitCode !== 0) {
+        throw new Error(
+            `rsync baselines failed to ${dstDir} (exit ${result.exitCode}); see ${mirrorLogPath}`
+        );
+    }
+}
+
 async function initSubmodules(
     ctx: RoundContext,
     worktree: string,
@@ -226,6 +274,7 @@ export async function startRound(
         await ensureDir(ctx.paths.logsDir);
         await worktreeAdd(ctx.paths.repoRoot, worktree, branch, ctx.config.parentBranch);
         await initSubmodules(ctx, worktree, logPath);
+        await mirrorEvalBaselines(ctx, worktree, logPath);
         await seedWorkerWorktree(ctx, worktree, roundNumber, worker, deadlineIso);
         await installDependencies(ctx, worktree, logPath);
 
