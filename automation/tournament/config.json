@@ -6,8 +6,15 @@
   "dockerConcurrency": 2,
   "tieEpsilon": 0.005,
   "pushMain": false,
-  "languages": ["typescript", "python"],
-  "fixtures": ["lumaai", "papr", "honcho"],
+  "languages": [
+    "typescript",
+    "python"
+  ],
+  "fixtures": [
+    "lumaai",
+    "papr",
+    "honcho"
+  ],
   "pathAllowlist": [
     "generators/typescript/**",
     "generators/python/**",
@@ -15,14 +22,13 @@
     "packages/ir-sdk/src/**",
     "packages/generator-migrations/src/generators/typescript/**",
     "packages/generator-migrations/src/generators/python/**",
-    "pnpm-lock.yaml",
-    "tournament/notes/**"
+    "pnpm-lock.yaml"
   ],
   "workerBudgetUsd": 30,
   "workerModel": "claude-opus-4-7",
   "parentBranch": "main",
   "roundLoopIntervalMs": 60000,
   "scoringPollIntervalMs": 30000,
-  "maxRounds": 1,
+  "maxRounds": 2,
   "skipEte": true
 }
