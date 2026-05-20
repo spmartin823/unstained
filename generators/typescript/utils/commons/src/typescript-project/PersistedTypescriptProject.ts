@@ -420,6 +420,18 @@ export class PersistedTypescriptProject {
             }
         }
 
+        // Also stage the src/ tree alongside dist/ so the emitted package
+        // exposes its TypeScript source to consumers (matches the shape most
+        // hand-authored / commercial SDKs ship for type-bundled distributions).
+        // dist/ remains the runtime entrypoint via package.json; src/ is an
+        // additive sibling, not a replacement.
+        const srcDirAbs = join(this.directory, this.srcDirectory);
+        try {
+            await cp(srcDirAbs, join(stagingDir, this.srcDirectory), { recursive: true });
+        } catch (e) {
+            logger.debug(`Skipping src/ staging: ${e}`);
+        }
+
         await this.zipDirectoryContents(stagingDir, {
             logger,
             destinationPath,
