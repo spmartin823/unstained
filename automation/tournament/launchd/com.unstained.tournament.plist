@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Reference launchd plist for the tournament daemon.
+
+  To install:
+    1. Edit the absolute paths below to match your machine (look for "EDIT-ME").
+    2. cp automation/tournament/launchd/com.unstained.tournament.plist ~/Library/LaunchAgents/
+    3. launchctl load ~/Library/LaunchAgents/com.unstained.tournament.plist
+
+  To stop:
+    launchctl unload ~/Library/LaunchAgents/com.unstained.tournament.plist
+
+  Logs:
+    ~/Library/Logs/com.unstained.tournament.{out,err}.log
+
+  KeepAlive=true restarts the daemon if it crashes. ThrottleInterval=60 prevents
+  tight restart loops. RunAtLoad=true starts immediately on `launchctl load`.
+
+  NOTE: This is a REFERENCE template. The orchestrator is currently stubbed;
+  do not load this plist until the daemon implementation lands.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.unstained.tournament</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/EDIT-ME/.nvm/versions/node/v24.15.0/bin/node</string>
+        <string>/Users/EDIT-ME/path/to/unstained/node_modules/.bin/tsx</string>
+        <string>/Users/EDIT-ME/path/to/unstained/automation/tournament/src/orchestrator.ts</string>
+        <string>/Users/EDIT-ME/path/to/unstained/automation/tournament/config.json</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/EDIT-ME/path/to/unstained</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/Users/EDIT-ME/.nvm/versions/node/v24.15.0/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>HOME</key>
+        <string>/Users/EDIT-ME</string>
+    </dict>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>ThrottleInterval</key>
+    <integer>60</integer>
+
+    <key>StandardOutPath</key>
+    <string>/Users/EDIT-ME/Library/Logs/com.unstained.tournament.out.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/EDIT-ME/Library/Logs/com.unstained.tournament.err.log</string>
+</dict>
+</plist>

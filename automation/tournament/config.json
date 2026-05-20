@@ -1,0 +1,27 @@
+{
+  "roundDurationHours": 2,
+  "graceMinutes": 15,
+  "workersPerRound": 3,
+  "scorers": 2,
+  "dockerConcurrency": 2,
+  "tieEpsilon": 0.005,
+  "pushMain": false,
+  "languages": ["typescript", "python"],
+  "fixtures": ["lumaai", "papr", "honcho"],
+  "pathAllowlist": [
+    "generators/typescript/**",
+    "generators/python/**",
+    "packages/ir-sdk/fern/apis/ir-types-latest/**",
+    "packages/ir-sdk/src/**",
+    "packages/generator-migrations/src/generators/typescript/**",
+    "packages/generator-migrations/src/generators/python/**",
+    "pnpm-lock.yaml",
+    "tournament/notes/**"
+  ],
+  "workerBudgetUsd": 30,
+  "workerModel": "claude-opus-4-7",
+  "parentBranch": "main",
+  "roundLoopIntervalMs": 60000,
+  "scoringPollIntervalMs": 30000,
+  "maxRounds": null
+}
