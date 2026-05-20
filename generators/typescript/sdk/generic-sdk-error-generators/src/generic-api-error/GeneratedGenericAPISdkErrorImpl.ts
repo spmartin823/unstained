@@ -63,7 +63,7 @@ export class GeneratedGenericAPISdkErrorImpl
             `    );`,
             `}`
         ].join("\n");
-        context.sourceFile.addStatements([
+        const statements: string[] = [
             apiErrorWithGenerate(base),
             emptySubclass("APIUserAbortError", "APIError"),
             emptySubclass("APIConnectionError", "APIError"),
@@ -75,8 +75,22 @@ export class GeneratedGenericAPISdkErrorImpl
             emptySubclass("PermissionDeniedError", "APIStatusError"),
             emptySubclass("ConflictError", "APIStatusError"),
             emptySubclass("RateLimitError", "APIStatusError"),
-            isAbortErrorFn
-        ]);
+            emptySubclass("BadRequestError", "APIStatusError"),
+            emptySubclass("NotFoundError", "APIStatusError"),
+            emptySubclass("UnprocessableEntityError", "APIStatusError"),
+            emptySubclass("InternalServerError", "APIStatusError")
+        ];
+        // If the generated API error class is named like `<Org>ApiError`,
+        // also emit a shorter `<Org>Error` alias to match the conventional
+        // Stainless-style top-level error name.
+        if (base.endsWith("ApiError") && base.length > "ApiError".length) {
+            const orgAlias = `${base.slice(0, -"ApiError".length)}Error`;
+            if (orgAlias !== base) {
+                statements.push(emptySubclass(orgAlias, base));
+            }
+        }
+        statements.push(isAbortErrorFn);
+        context.sourceFile.addStatements(statements);
     }
 
     public build(
