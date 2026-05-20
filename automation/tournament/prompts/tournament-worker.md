@@ -18,6 +18,12 @@ Fitness is lexicographic over the eval composite. Six (fixture × language) pair
 
 Implication: **unlocking the behavioral metric for even one pair beats any amount of signature-parity polish.** Behavioral is null when the Fern-emitted package can't be installed and imported by the Stainless baseline's test suite. The first lever is making the emitted package *installable* — packaging metadata, import paths, top-level exports.
 
+### Do NOT speedrun tier 3
+
+A common failure mode: commit a single notes file to `tournament/notes/`, `touch .tournament/scoreme`, and "win" the round on tier-3 timestamp. **This contributes zero to the goal.** The user will roll back any round whose winning diff didn't move a real metric. Treat tier-3 wins as losses.
+
+A useful round produces non-zero **delta** on at least one of the tier-2 sub-metrics (signature, symbol, file, structural) for at least one (fixture, language) pair. That requires editing generator code, IR, or a generator migration — see §4 path allowlist. A round that only adds notes is not useful, regardless of timestamp.
+
 ## 3. Hard constraints (disqualifying)
 
 1. **NEVER edit anything under `stainless-equivalency-eval/`.** The eval is the judge. Editing it is cheating. The orchestrator detects via path-diff check and disqualifies your branch before scoring.
@@ -74,17 +80,31 @@ Don't waste scoring cycles on commits that don't compile.
 
 Read `stainless-equivalency-eval/src/metrics/*.ts` to understand exactly what each metric measures. The eval is not a mystery — it's reproducible TypeScript you can read.
 
-Rough order of leverage (verify against your own observations):
+### Find the cheapest real lever first
 
-1. **Behavioral unlock.** Pick one (fixture, language) where Stainless's tests look approachable, and get Fern's output installable + importable. Read the baseline at `stainless-equivalency-eval/baselines/<fix>/stainless-output/<lang>/`. Diff its `package.json` / `pyproject.toml` against Fern's emitted output.
+Don't write a strategy doc and then run out of time. Run **one** scoring cycle on stock main to establish baseline, then pick the (fixture, language) pair where you have the largest absolute symbol/file gap to close, and go fix that gap in the generator. Examples:
+
+- The baseline's `stainless-output/<lang>/` exports a `BadRequestError`, `RateLimitError`, etc. but Fern's `fern-output/<lang>/` doesn't → add the error-class emission to the generator (`generators/typescript/sdk/src/...`).
+- Stainless's tree has 50 typed-request-body classes; Fern emits 4 → look at how Fern handles request bodies and emit the missing ones.
+- Stainless ships top-level `pagination.ts` / `client.ts`; Fern doesn't → emit those scaffolding files.
+
+The first real change wins the round, no matter how small. **A 0.001 lift on one symbol-coverage metric beats a perfect strategy note.**
+
+### Rough order of leverage
+
+1. **Behavioral unlock.** Pick one (fixture, language) where Stainless's tests look approachable, and get Fern's output installable + importable. The eval needs a `package.json` in `fern-output/typescript/` — Fern's local output currently doesn't emit one. Adding `package.json` emission to the TS SDK generator is a candidate behavioral unlock.
 2. **Signature parity.** Look at failing `signature-parity` metric data — it produces a list of mismatched symbols. Root causes often live in IR codegen.
 3. **Symbol / file / structural** are easy points but bounded. Once you're at ~95% you can't go higher without re-architecting.
 
-**Generator defaults policy (NON-NEGOTIABLE).** Any change that alters generator output for users who haven't opted in must be gated behind a config flag whose default preserves current behavior. To flip the default for a future major version, add a generator migration under `packages/generator-migrations/src/generators/<gen>/migrations/<N>.0.0.ts` that restores the old value for unconfigured users. See `packages/generator-migrations/README.md` and the `typescript/migrations/3.0.0.ts` reference example. Skipping this disqualifies your win via the path allowlist check.
+### Generator defaults policy (NON-NEGOTIABLE)
 
-**Revert freely.** If a commit tanks your score, `git revert` it. Score history lives in `tournament/scores/` (read-only for you, but readable) if you want to compare SHAs.
+Any change that alters generator output for users who haven't opted in must be gated behind a config flag whose default preserves current behavior. To flip the default for a future major version, add a generator migration under `packages/generator-migrations/src/generators/<gen>/migrations/<N>.0.0.ts` that restores the old value for unconfigured users. See `packages/generator-migrations/README.md` and the `typescript/migrations/3.0.0.ts` reference example. Skipping this disqualifies your win via the path allowlist check.
 
-**Do not try to game the eval.** The user will read winning diffs in the morning. Hacks that mimic Stainless surface without functional improvement (hardcoded symbol exports that never get called, etc.) will be caught and rolled back, and your round is wasted.
+### Other rules
+
+- **Revert freely.** If a commit tanks your score, `git revert` it. Score history lives in `tournament/scores/` (read-only for you, but readable) if you want to compare SHAs.
+- **Do not try to game the eval.** The user reads winning diffs. Hacks that mimic Stainless surface without functional improvement (hardcoded symbol exports that never get called, etc.) will be caught and rolled back, and your round is wasted.
+- **Notes are a fallback, not a strategy.** `tournament/notes/` is for documenting genuine blockers when no generator progress is possible (e.g. you discovered an upstream bug that takes more than the remaining round). It is not for filing a strategy doc to win on tier-3 timestamp.
 
 ## 7. Required reading (in order)
 
@@ -96,9 +116,10 @@ Rough order of leverage (verify against your own observations):
 
 ## 8. Endgame
 
-When less than 15 minutes remain (check `date` against `DEADLINE` in `.context/worker.env`):
+When less than 5 minutes remain (check `date` against `DEADLINE` in `.context/worker.env`):
 
 - Stop new experiments.
 - If you have an uncommitted improvement, decide quickly: commit it, or revert. Half-finished diffs lose.
 - `touch .tournament/scoreme` one last time to ensure your final SHA is scored.
-- If your current score is `{ete: "fail"}`, you have already lost. Spend the remaining time isolating the breakage with `git bisect` so a future worker doesn't repeat it. Commit your findings as a note in `tournament/notes/r<NN>-w<MM>.md`.
+
+Notes belong in `tournament/notes/r<NN>-w<MM>.md` ONLY if you discovered a genuine blocker that you could not fix in the round (e.g. an upstream bug in the eval, a hard-to-reproduce regression). Notes are not a winning move on their own — see §2 "Do NOT speedrun tier 3."
