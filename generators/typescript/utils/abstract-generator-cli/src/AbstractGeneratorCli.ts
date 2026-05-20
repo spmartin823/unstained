@@ -105,6 +105,20 @@ export abstract class AbstractGeneratorCli<CustomConfig> {
                     isPackagePrivate: this.isPackagePrivate(customConfig)
                 });
             }
+            // Final fallback for local-file-system (downloadFiles) outputs that did not
+            // thread publishConfig through the IR: derive a minimal NpmPackage from the
+            // generator's organization name so the emitted package.json carries a `name`
+            // field (otherwise it ships nameless and cannot be installed by consumers).
+            if (npmPackage == null && config.organization.length > 0) {
+                npmPackage = {
+                    packageName: config.organization,
+                    version: "0.0.0",
+                    private: this.isPackagePrivate(customConfig),
+                    publishInfo: undefined,
+                    license: undefined,
+                    repoUrl: undefined
+                };
+            }
 
             await generatorNotificationService.sendUpdate(
                 FernGeneratorExec.GeneratorUpdate.initV2({
