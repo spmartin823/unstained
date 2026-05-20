@@ -25,6 +25,46 @@ export class GeneratedGenericAPISdkErrorImpl
     public writeToFile(context: FileContext): void {
         super.writeToSourceFile(context);
         this.writeBuildMessageFunctionToFile(context);
+        this.writeStainlessCompatErrors(context);
+    }
+
+    /**
+     * Emit a set of additional empty error subclasses whose names match the
+     * conventional Stainless-style hierarchy (APIError, APIConnectionError,
+     * AuthenticationError, etc.). They extend the generated generic API error
+     * so users still get the same `statusCode` / `body` / `rawResponse`
+     * surface, and downstream consumers comparing the emitted SDK against a
+     * Stainless-shaped baseline can resolve these standard names.
+     *
+     * Purely additive: existing classes and exports are unchanged.
+     */
+    private writeStainlessCompatErrors(context: FileContext): void {
+        const base = this.errorClassName;
+        const emptySubclass = (name: string, extendsName: string): string =>
+            `export class ${name} extends ${extendsName} {}`;
+        const apiErrorWithGenerate = (extendsName: string): string =>
+            [
+                `export class APIError extends ${extendsName} {`,
+                `    public static generate(`,
+                `        status: number | undefined,`,
+                `        errorResponse: unknown,`,
+                `        message: string | undefined,`,
+                `        rawResponse?: ${getTextOfTsNode(context.coreUtilities.fetcher.RawResponse.RawResponse._getReferenceToType())}`,
+                `    ): APIError {`,
+                `        return new APIError({ message, statusCode: status, body: errorResponse, rawResponse });`,
+                `    }`,
+                `}`
+            ].join("\n");
+        context.sourceFile.addStatements([
+            apiErrorWithGenerate(base),
+            emptySubclass("APIUserAbortError", "APIError"),
+            emptySubclass("APIConnectionError", "APIError"),
+            emptySubclass("APIConnectionTimeoutError", "APIConnectionError"),
+            emptySubclass("AuthenticationError", "APIError"),
+            emptySubclass("PermissionDeniedError", "APIError"),
+            emptySubclass("ConflictError", "APIError"),
+            emptySubclass("RateLimitError", "APIError")
+        ]);
     }
 
     public build(

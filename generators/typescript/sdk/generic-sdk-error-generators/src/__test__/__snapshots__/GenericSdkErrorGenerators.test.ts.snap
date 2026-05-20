@@ -105,6 +105,30 @@ function buildMessage({ message, statusCode, body }: {
 
     return lines.join("\\n");
 }
+export class APIError extends CustomApiError {
+    public static generate(
+        status: number | undefined,
+        errorResponse: unknown,
+        message: string | undefined,
+        rawResponse?: RawResponse
+    ): APIError {
+        return new APIError({ message, statusCode: status, body: errorResponse, rawResponse });
+    }
+}
+
+export class APIUserAbortError extends APIError {}
+
+export class APIConnectionError extends APIError {}
+
+export class APIConnectionTimeoutError extends APIConnectionError {}
+
+export class AuthenticationError extends APIError {}
+
+export class PermissionDeniedError extends APIError {}
+
+export class ConflictError extends APIError {}
+
+export class RateLimitError extends APIError {}
 "
 `;
 
@@ -158,6 +182,30 @@ function buildMessage({ message, statusCode, body }: {
 
     return lines.join("\\n");
 }
+export class APIError extends ApiError {
+    public static generate(
+        status: number | undefined,
+        errorResponse: unknown,
+        message: string | undefined,
+        rawResponse?: RawResponse
+    ): APIError {
+        return new APIError({ message, statusCode: status, body: errorResponse, rawResponse });
+    }
+}
+
+export class APIUserAbortError extends APIError {}
+
+export class APIConnectionError extends APIError {}
+
+export class APIConnectionTimeoutError extends APIConnectionError {}
+
+export class AuthenticationError extends APIError {}
+
+export class PermissionDeniedError extends APIError {}
+
+export class ConflictError extends APIError {}
+
+export class RateLimitError extends APIError {}
 "
 `;
 
