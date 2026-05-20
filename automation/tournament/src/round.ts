@@ -79,6 +79,57 @@ async function buildWorkerArgs(ctx: RoundContext, worktree: string): Promise<str
     ];
 }
 
+async function mirrorFernBuild(
+    ctx: RoundContext,
+    worktree: string,
+    logPath: string
+): Promise<void> {
+    // The eval invokes packages/cli/cli/dist/prod/cli.cjs to generate Fern
+    // output. That build artifact only exists if 'pnpm fern:build' has run.
+    // Rather than rebuild Fern in every worker worktree (5-10 min), rsync the
+    // prod build from the parent repoRoot. Same approach for seed CLI.
+    const env: NodeJS.ProcessEnv = {
+        PATH: `${ctx.paths.nodeBinaryDir}:${process.env.PATH ?? ""}`,
+        HOME: process.env.HOME ?? ""
+    };
+    const { access } = await import("node:fs/promises");
+    const targets: ReadonlyArray<[string, string]> = [
+        [`${ctx.paths.repoRoot}/packages/cli/cli/dist/`, `${worktree}/packages/cli/cli/dist/`],
+        [`${ctx.paths.repoRoot}/packages/cli/cli-v2/dist/`, `${worktree}/packages/cli/cli-v2/dist/`],
+        [`${ctx.paths.repoRoot}/packages/seed/dist/`, `${worktree}/packages/seed/dist/`]
+    ];
+    const lines: string[] = [];
+    let failed = false;
+    for (const [src, dst] of targets) {
+        try {
+            await access(src);
+        } catch {
+            lines.push(`src=${src}\nstatus=skipped (not present in repoRoot)\n---`);
+            continue;
+        }
+        const result = await runCaptured("rsync", ["-a", src, dst], {
+            cwd: worktree,
+            env,
+            timeoutMs: 5 * 60 * 1000
+        });
+        const status = result.exitCode === 0 ? "ok" : `fail-exit-${result.exitCode}`;
+        lines.push(`src=${src}\ndst=${dst}\nstatus=${status}\n${result.stdout}\n${result.stderr}\n---`);
+        if (result.exitCode !== 0) {
+            failed = true;
+        }
+    }
+    const mirrorLogPath = `${logPath}.fern-build-mirror.log`;
+    try {
+        const { writeFile } = await import("node:fs/promises");
+        await writeFile(mirrorLogPath, lines.join("\n"), "utf8");
+    } catch {
+        /* best-effort */
+    }
+    if (failed) {
+        throw new Error(`rsync fern build artifacts had failures; see ${mirrorLogPath}`);
+    }
+}
+
 async function mirrorEvalBaselines(
     ctx: RoundContext,
     worktree: string,
@@ -275,6 +326,7 @@ export async function startRound(
         await worktreeAdd(ctx.paths.repoRoot, worktree, branch, ctx.config.parentBranch);
         await initSubmodules(ctx, worktree, logPath);
         await mirrorEvalBaselines(ctx, worktree, logPath);
+        await mirrorFernBuild(ctx, worktree, logPath);
         await seedWorkerWorktree(ctx, worktree, roundNumber, worker, deadlineIso);
         await installDependencies(ctx, worktree, logPath);
 
