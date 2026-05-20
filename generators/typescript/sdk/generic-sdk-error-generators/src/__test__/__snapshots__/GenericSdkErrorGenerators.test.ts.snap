@@ -122,13 +122,26 @@ export class APIConnectionError extends APIError {}
 
 export class APIConnectionTimeoutError extends APIConnectionError {}
 
-export class AuthenticationError extends APIError {}
+export class APITimeoutError extends APIConnectionError {}
 
-export class PermissionDeniedError extends APIError {}
+export class APIResponseValidationError extends APIError {}
 
-export class ConflictError extends APIError {}
+export class APIStatusError extends APIError {}
 
-export class RateLimitError extends APIError {}
+export class AuthenticationError extends APIStatusError {}
+
+export class PermissionDeniedError extends APIStatusError {}
+
+export class ConflictError extends APIStatusError {}
+
+export class RateLimitError extends APIStatusError {}
+
+export function isAbortError(error: unknown): boolean {
+    return (
+        (typeof DOMException !== "undefined" && error instanceof DOMException && error.name === "AbortError") ||
+        (error instanceof Error && (error.name === "AbortError" || error.name === "APIUserAbortError"))
+    );
+}
 "
 `;
 
@@ -199,13 +212,26 @@ export class APIConnectionError extends APIError {}
 
 export class APIConnectionTimeoutError extends APIConnectionError {}
 
-export class AuthenticationError extends APIError {}
+export class APITimeoutError extends APIConnectionError {}
 
-export class PermissionDeniedError extends APIError {}
+export class APIResponseValidationError extends APIError {}
 
-export class ConflictError extends APIError {}
+export class APIStatusError extends APIError {}
 
-export class RateLimitError extends APIError {}
+export class AuthenticationError extends APIStatusError {}
+
+export class PermissionDeniedError extends APIStatusError {}
+
+export class ConflictError extends APIStatusError {}
+
+export class RateLimitError extends APIStatusError {}
+
+export function isAbortError(error: unknown): boolean {
+    return (
+        (typeof DOMException !== "undefined" && error instanceof DOMException && error.name === "AbortError") ||
+        (error instanceof Error && (error.name === "AbortError" || error.name === "APIUserAbortError"))
+    );
+}
 "
 `;
 

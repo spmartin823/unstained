@@ -55,15 +55,27 @@ export class GeneratedGenericAPISdkErrorImpl
                 `    }`,
                 `}`
             ].join("\n");
+        const isAbortErrorFn = [
+            `export function isAbortError(error: unknown): boolean {`,
+            `    return (`,
+            `        (typeof DOMException !== "undefined" && error instanceof DOMException && error.name === "AbortError") ||`,
+            `        (error instanceof Error && (error.name === "AbortError" || error.name === "APIUserAbortError"))`,
+            `    );`,
+            `}`
+        ].join("\n");
         context.sourceFile.addStatements([
             apiErrorWithGenerate(base),
             emptySubclass("APIUserAbortError", "APIError"),
             emptySubclass("APIConnectionError", "APIError"),
             emptySubclass("APIConnectionTimeoutError", "APIConnectionError"),
-            emptySubclass("AuthenticationError", "APIError"),
-            emptySubclass("PermissionDeniedError", "APIError"),
-            emptySubclass("ConflictError", "APIError"),
-            emptySubclass("RateLimitError", "APIError")
+            emptySubclass("APITimeoutError", "APIConnectionError"),
+            emptySubclass("APIResponseValidationError", "APIError"),
+            emptySubclass("APIStatusError", "APIError"),
+            emptySubclass("AuthenticationError", "APIStatusError"),
+            emptySubclass("PermissionDeniedError", "APIStatusError"),
+            emptySubclass("ConflictError", "APIStatusError"),
+            emptySubclass("RateLimitError", "APIStatusError"),
+            isAbortErrorFn
         ]);
     }
 
