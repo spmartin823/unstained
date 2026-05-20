@@ -87,6 +87,12 @@ export class ScoringPool {
             return dq;
         }
 
+        // Rebuild Fern CLI from the worker's source so generator changes
+        // actually surface in the eval. Without this, the eval invokes the
+        // dist/prod/cli.cjs we mirrored from main at startRound — workers
+        // editing generators/typescript/** see no metric change.
+        await this.rebuildFern(job);
+
         let ete: EteOutcome;
         if (this.ctx.config.skipEte) {
             ete = "pass";
@@ -138,6 +144,43 @@ export class ScoringPool {
         const workerSnapshot = join(job.worktree, ".tournament", "score.json");
         await ensureDir(join(job.worktree, ".tournament"));
         await writeJsonAtomic(workerSnapshot, score);
+    }
+
+    private async rebuildFern(job: ScoringJob): Promise<void> {
+        const env = pnpmEnv(this.ctx.paths);
+        const start = Date.now();
+        const result = await runCaptured(this.ctx.paths.pnpmBinary, ["fern:build"], {
+            cwd: job.worktree,
+            env,
+            timeoutMs: 20 * 60 * 1000
+        });
+        const logPath = join(this.ctx.paths.logsDir, `scoring-${job.sha}-rebuild.log`);
+        const MAX = 1_000_000;
+        const truncate = (s: string): string =>
+            s.length > MAX ? `${s.slice(0, MAX)}\n[... truncated ${s.length - MAX} bytes ...]` : s;
+        try {
+            await ensureDir(this.ctx.paths.logsDir);
+            await (await import("node:fs/promises")).writeFile(
+                logPath,
+                [
+                    `exit=${result.exitCode}`,
+                    `sha=${job.sha}`,
+                    `branch=${job.branch}`,
+                    `duration_ms=${Date.now() - start}`,
+                    "--- stdout ---",
+                    truncate(result.stdout ?? ""),
+                    "--- stderr ---",
+                    truncate(result.stderr ?? "")
+                ].join("\n"),
+                "utf8"
+            );
+        } catch {
+            /* best-effort */
+        }
+        // Non-fatal: if the rebuild fails, fall through to the eval anyway.
+        // The eval will either use the mirrored prebuilt binary (so the
+        // worker's changes won't surface) or itself fail with a logged error.
+        // We log the rebuild result either way so failures are diagnosable.
     }
 
     private async runEte(job: ScoringJob): Promise<EteOutcome> {
