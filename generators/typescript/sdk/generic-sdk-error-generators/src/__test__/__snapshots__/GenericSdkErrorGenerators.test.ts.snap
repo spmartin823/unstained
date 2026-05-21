@@ -124,11 +124,37 @@ export class APIConnectionTimeoutError extends APIConnectionError {}
 
 export class AuthenticationError extends APIError {}
 
+export class UnauthorizedError extends APIError {}
+
 export class PermissionDeniedError extends APIError {}
+
+export class ForbiddenError extends APIError {}
 
 export class ConflictError extends APIError {}
 
+export class ContentTooLargeError extends APIError {}
+
+export class UnsupportedMediaTypeError extends APIError {}
+
 export class RateLimitError extends APIError {}
+
+export function isAbortError(err: unknown): boolean {
+    return (
+        (typeof err === "object" && err !== null && (err as { name?: string }).name === "AbortError") ||
+        err instanceof APIUserAbortError
+    );
+}
+
+export function handleNonStatusCodeError(error: unknown): APIError {
+    if (error instanceof APIError) {
+        return error;
+    }
+    if (isAbortError(error)) {
+        return new APIUserAbortError({ message: "Request was aborted." });
+    }
+    const message = error instanceof Error ? error.message : String(error);
+    return new APIConnectionError({ message, cause: error });
+}
 "
 `;
 
@@ -201,11 +227,37 @@ export class APIConnectionTimeoutError extends APIConnectionError {}
 
 export class AuthenticationError extends APIError {}
 
+export class UnauthorizedError extends APIError {}
+
 export class PermissionDeniedError extends APIError {}
+
+export class ForbiddenError extends APIError {}
 
 export class ConflictError extends APIError {}
 
+export class ContentTooLargeError extends APIError {}
+
+export class UnsupportedMediaTypeError extends APIError {}
+
 export class RateLimitError extends APIError {}
+
+export function isAbortError(err: unknown): boolean {
+    return (
+        (typeof err === "object" && err !== null && (err as { name?: string }).name === "AbortError") ||
+        err instanceof APIUserAbortError
+    );
+}
+
+export function handleNonStatusCodeError(error: unknown): APIError {
+    if (error instanceof APIError) {
+        return error;
+    }
+    if (isAbortError(error)) {
+        return new APIUserAbortError({ message: "Request was aborted." });
+    }
+    const message = error instanceof Error ? error.message : String(error);
+    return new APIConnectionError({ message, cause: error });
+}
 "
 `;
 

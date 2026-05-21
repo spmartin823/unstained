@@ -6,14 +6,16 @@ export declare namespace GenericAPISdkErrorGenerator {
     export namespace generateGenericAPISdkError {
         export interface Args {
             errorClassName: string;
+            namespaceExport?: string;
         }
     }
 }
 
 export class GenericAPISdkErrorGenerator {
     public generateGenericAPISdkError({
-        errorClassName
+        errorClassName,
+        namespaceExport
     }: GenericAPISdkErrorGenerator.generateGenericAPISdkError.Args): GeneratedGenericAPISdkError {
-        return new GeneratedGenericAPISdkErrorImpl({ errorClassName });
+        return new GeneratedGenericAPISdkErrorImpl({ errorClassName, namespaceExport });
     }
 }

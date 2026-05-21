@@ -19,3 +19,63 @@ class ApiError(Exception):
 
     def __str__(self) -> str:
         return f"headers: {self.headers}, status_code: {self.status_code}, body: {self.body}"
+
+
+class APIError(ApiError):
+    pass
+
+
+class APIConnectionError(APIError):
+    pass
+
+
+class APIConnectionTimeoutError(APIConnectionError):
+    pass
+
+
+class APIUserAbortError(APIError):
+    pass
+
+
+class AuthenticationError(APIError):
+    pass
+
+
+class UnauthorizedError(APIError):
+    pass
+
+
+class PermissionDeniedError(APIError):
+    pass
+
+
+class ForbiddenError(APIError):
+    pass
+
+
+class ConflictError(APIError):
+    pass
+
+
+class ContentTooLargeError(APIError):
+    pass
+
+
+class UnsupportedMediaTypeError(APIError):
+    pass
+
+
+class RateLimitError(APIError):
+    pass
+
+
+def is_abort_error(err: Any) -> bool:
+    return isinstance(err, APIUserAbortError)
+
+
+def handle_non_status_code_error(error: Any) -> APIError:
+    if isinstance(error, APIError):
+        return error
+    if is_abort_error(error):
+        return APIUserAbortError()
+    return APIConnectionError()
