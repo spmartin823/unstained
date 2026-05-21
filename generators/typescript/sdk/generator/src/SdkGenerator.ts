@@ -1728,7 +1728,8 @@ export class SdkGenerator {
                 const context = this.generateFileContext({ sourceFile, importsManager });
                 this.genericAPISdkErrorGenerator
                     .generateGenericAPISdkError({
-                        errorClassName: this.genericAPISdkErrorDeclarationReferencer.getExportedName()
+                        errorClassName: this.genericAPISdkErrorDeclarationReferencer.getExportedName(),
+                        namespaceExport: this.namespaceExport
                     })
                     .writeToFile(context);
             }

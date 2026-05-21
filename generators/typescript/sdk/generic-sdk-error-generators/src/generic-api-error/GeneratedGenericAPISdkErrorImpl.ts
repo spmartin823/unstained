@@ -3,10 +3,23 @@ import { getTextOfTsKeyword, getTextOfTsNode } from "@fern-typescript/commons";
 import { FileContext, GeneratedGenericAPISdkError } from "@fern-typescript/contexts";
 import { OptionalKind, ParameterDeclarationStructure, PropertyDeclarationStructure, Scope, ts } from "ts-morph";
 
+export declare namespace GeneratedGenericAPISdkErrorImpl {
+    export interface Init extends AbstractErrorClassGenerator.Init {
+        namespaceExport?: string;
+    }
+}
+
 export class GeneratedGenericAPISdkErrorImpl
     extends AbstractErrorClassGenerator<FileContext>
     implements GeneratedGenericAPISdkError
 {
+    private readonly namespaceExport: string | undefined;
+
+    constructor({ namespaceExport, ...superInit }: GeneratedGenericAPISdkErrorImpl.Init) {
+        super(superInit);
+        this.namespaceExport = namespaceExport;
+    }
+
     private static readonly STATUS_CODE_PROPERTY_NAME = "statusCode";
     private static readonly RESPONSE_BODY_PROPERTY_NAME = "body";
     private static readonly RAW_RESPONSE_PROPERTY_NAME = "rawResponse";
@@ -55,16 +68,50 @@ export class GeneratedGenericAPISdkErrorImpl
                 `    }`,
                 `}`
             ].join("\n");
-        context.sourceFile.addStatements([
+        const statements: string[] = [
             apiErrorWithGenerate(base),
             emptySubclass("APIUserAbortError", "APIError"),
             emptySubclass("APIConnectionError", "APIError"),
             emptySubclass("APIConnectionTimeoutError", "APIConnectionError"),
             emptySubclass("AuthenticationError", "APIError"),
+            emptySubclass("UnauthorizedError", "APIError"),
             emptySubclass("PermissionDeniedError", "APIError"),
+            emptySubclass("ForbiddenError", "APIError"),
             emptySubclass("ConflictError", "APIError"),
-            emptySubclass("RateLimitError", "APIError")
-        ]);
+            emptySubclass("ContentTooLargeError", "APIError"),
+            emptySubclass("UnsupportedMediaTypeError", "APIError"),
+            emptySubclass("RateLimitError", "APIError"),
+            [
+                "export function isAbortError(err: unknown): boolean {",
+                "    return (",
+                '        (typeof err === "object" && err !== null && (err as { name?: string }).name === "AbortError") ||',
+                "        err instanceof APIUserAbortError",
+                "    );",
+                "}"
+            ].join("\n"),
+            [
+                "export function handleNonStatusCodeError(error: unknown): APIError {",
+                "    if (error instanceof APIError) {",
+                "        return error;",
+                "    }",
+                "    if (isAbortError(error)) {",
+                '        return new APIUserAbortError({ message: "Request was aborted." });',
+                "    }",
+                "    const message = error instanceof Error ? error.message : String(error);",
+                "    return new APIConnectionError({ message, cause: error });",
+                "}"
+            ].join("\n")
+        ];
+        const orgName =
+            this.namespaceExport != null && this.namespaceExport.length > 0
+                ? this.namespaceExport.charAt(0).toUpperCase() + this.namespaceExport.slice(1)
+                : undefined;
+        if (orgName != null) {
+            statements.push(emptySubclass(`${orgName}Error`, "APIError"));
+            statements.push(emptySubclass(`${orgName}ApiError`, "APIError"));
+            statements.push(emptySubclass(`${orgName}ApiTimeoutError`, "APIConnectionTimeoutError"));
+        }
+        context.sourceFile.addStatements(statements);
     }
 
     public build(
