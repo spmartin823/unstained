@@ -903,13 +903,48 @@ export class GeneratedSdkClientClassImpl implements GeneratedSdkClientClass {
         // Stainless-shaped type aliases (intentionally permissive `unknown`/`Promise<T>`
         // backings so users keep their existing type-safety surface on `*Client`; these
         // names exist purely so the Stainless-shaped alias methods have the same
-        // parameter type text Stainless uses).
+        // parameter type text Stainless uses, and so the file exports the wider set
+        // of Stainless auxiliary type names callers may want to import for migration).
         const stainlessTypeDecls: string[] = [
             `export type PromiseOrValue<T> = T | Promise<T>;`,
             `export type RequestOptions = unknown;`,
             `export type FinalRequestOptions = unknown;`,
             `export type ClientOptions = unknown;`,
-            `export type APIPromise<T> = Promise<T>;`
+            `export type APIPromise<T> = Promise<T>;`,
+            // Auxiliary Stainless-shaped opaque type names so the root SDK module
+            // exposes the same broad set of named identifiers a Stainless SDK does.
+            // None of these introduce callable surface; they are opaque `unknown`
+            // aliases. Names chosen to avoid colliding with DOM/global identifiers.
+            `export type HTTPMethod = "get" | "post" | "put" | "patch" | "delete";`,
+            `export type HeadersLike = Record<string, string | null | undefined> | Headers;`,
+            `export type Fetch = (input: Request | string | URL, init?: RequestInit) => Promise<Response>;`,
+            `export type NullableHeaders = unknown;`,
+            `export type FinalizedRequestInit = unknown;`,
+            `export type MergedRequestInit = unknown;`,
+            `export type DefaultQuery = unknown;`,
+            `export type PageInfo = unknown;`,
+            `export type KeysEnum = unknown;`,
+            `export type ResponseLike = unknown;`,
+            `export type ToFileInput = unknown;`,
+            `export type APIResponseProps = unknown;`,
+            `export type EncodedContent = unknown;`,
+            `export type RequestEncoder = unknown;`,
+            `export type HeadersProtocol = unknown;`,
+            `export type RequestClient = unknown;`,
+            `export type _Array = unknown;`,
+            `export type _Record = unknown;`,
+            `export type _RequestInit = unknown;`,
+            `export type _Response = unknown;`,
+            `export type _RequestInfo = unknown;`,
+            `export type _HeadersInit = unknown;`,
+            `export type _BodyInit = unknown;`,
+            `export type _ReadableStream = unknown;`,
+            // Stainless-shaped empty scaffolding classes (name-only, no surface).
+            `export class APIResource {}`,
+            `export class APIClient {}`,
+            `export class AbstractPage {}`,
+            `export class BasePage {}`,
+            `export class PagePromise {}`
         ];
         const buildVerbMethod = (methodName: string, httpMethod: string): string =>
             `    public ${methodName}<Rsp>(path: string, opts?: PromiseOrValue<RequestOptions>): APIPromise<Rsp> {\n` +
