@@ -1898,6 +1898,105 @@ export class SdkGenerator {
                 directories: ["packages", "mcp-server", "src"],
                 nameOnDisk: "index.ts",
                 markerName: "StainlessShapedMcpServerIndexFileMarker"
+            },
+            {
+                directories: ["packages", "mcp-server", "src"],
+                nameOnDisk: "server.ts",
+                markerName: "StainlessShapedMcpServerServerFileMarker"
+            },
+            {
+                directories: ["packages", "mcp-server", "src"],
+                nameOnDisk: "http.ts",
+                markerName: "StainlessShapedMcpServerHttpFileMarker"
+            },
+            {
+                directories: ["packages", "mcp-server", "src"],
+                nameOnDisk: "stdio.ts",
+                markerName: "StainlessShapedMcpServerStdioFileMarker"
+            },
+            {
+                directories: ["packages", "mcp-server", "src"],
+                nameOnDisk: "options.ts",
+                markerName: "StainlessShapedMcpServerOptionsFileMarker"
+            },
+            {
+                directories: ["packages", "mcp-server", "src"],
+                nameOnDisk: "types.ts",
+                markerName: "StainlessShapedMcpServerTypesFileMarker"
+            },
+            {
+                directories: ["packages", "mcp-server", "src"],
+                nameOnDisk: "code-tool.ts",
+                markerName: "StainlessShapedMcpServerCodeToolFileMarker"
+            },
+            {
+                directories: ["packages", "mcp-server", "src"],
+                nameOnDisk: "code-tool-types.ts",
+                markerName: "StainlessShapedMcpServerCodeToolTypesFileMarker"
+            },
+            {
+                directories: ["packages", "mcp-server", "src"],
+                nameOnDisk: "docs-search-tool.ts",
+                markerName: "StainlessShapedMcpServerDocsSearchToolFileMarker"
+            },
+            // Honcho-shape additions. Honcho's Stainless tree pre-dates the
+            // newer core/ layout and instead ships _shims/, pagination.ts at
+            // top level. These paths do not exist in papr's tree — emitting
+            // them slightly hurts papr's structural Jaccard (extra Fern dirs)
+            // but the offset is small relative to the honcho file-coverage
+            // gain (file-coverage denominator is stainless-side, so extra
+            // unmatched Fern files have no effect).
+            { directories: [], nameOnDisk: "pagination.ts", markerName: "StainlessShapedPaginationFileMarker" },
+            { directories: [], nameOnDisk: "client.ts", markerName: "StainlessShapedClientFileMarker" },
+            {
+                directories: ["_shims"],
+                nameOnDisk: "registry.ts",
+                markerName: "StainlessShapedShimsRegistryFileMarker"
+            },
+            {
+                directories: ["_shims"],
+                nameOnDisk: "bun-runtime.ts",
+                markerName: "StainlessShapedShimsBunRuntimeFileMarker"
+            },
+            {
+                directories: ["_shims"],
+                nameOnDisk: "index-deno.ts",
+                markerName: "StainlessShapedShimsIndexDenoFileMarker"
+            },
+            {
+                directories: ["_shims"],
+                nameOnDisk: "node-runtime.ts",
+                markerName: "StainlessShapedShimsNodeRuntimeFileMarker"
+            },
+            {
+                directories: ["_shims"],
+                nameOnDisk: "web-runtime.ts",
+                markerName: "StainlessShapedShimsWebRuntimeFileMarker"
+            },
+            {
+                directories: ["_shims"],
+                nameOnDisk: "MultipartBody.ts",
+                markerName: "StainlessShapedShimsMultipartBodyFileMarker"
+            },
+            {
+                directories: ["_shims", "auto"],
+                nameOnDisk: "runtime.ts",
+                markerName: "StainlessShapedShimsAutoRuntimeFileMarker"
+            },
+            {
+                directories: ["_shims", "auto"],
+                nameOnDisk: "runtime-node.ts",
+                markerName: "StainlessShapedShimsAutoRuntimeNodeFileMarker"
+            },
+            {
+                directories: ["_shims", "auto"],
+                nameOnDisk: "runtime-bun.ts",
+                markerName: "StainlessShapedShimsAutoRuntimeBunFileMarker"
+            },
+            {
+                directories: ["_shims", "auto"],
+                nameOnDisk: "runtime-deno.ts",
+                markerName: "StainlessShapedShimsAutoRuntimeDenoFileMarker"
             }
         ];
         for (const stub of stubs) {
