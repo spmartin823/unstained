@@ -958,12 +958,7 @@ export class GeneratedSdkClientClassImpl implements GeneratedSdkClientClass {
             `export type ParsePointer = unknown;`,
             // Stainless-shaped empty scaffolding classes (name-only, no surface).
             `export class APIResource {}`,
-            // AbstractPage method surface mirrors upstream honcho/core.ts —
-            // five no-arg methods that downstream consumers comparing the
-            // emitted SDK against a Stainless-shaped baseline can resolve
-            // by name. Bodies are stubs; signatures (0 params) trivially
-            // match Stainless's own signatures.
-            `export class AbstractPage<Item = unknown> { public hasNextPage(): boolean { return false; } public async getNextPage(): Promise<this> { return this; } public getPaginatedItems(): Item[] { return []; } public nextPageParams(): Partial<Record<string, unknown>> | null { return null; } public nextPageInfo(): PageInfo | null { return null; } public async *iterPages(): AsyncGenerator<this> { yield this; } }`,
+            `export class AbstractPage {}`,
             `export class BasePage {}`,
             `export class PagePromise {}`,
             // Stainless-shaped APIClient base class with the HTTP verb surface that
@@ -983,7 +978,7 @@ export class GeneratedSdkClientClassImpl implements GeneratedSdkClientClass {
             // upload helpers). Implementations are no-op stubs so the surface
             // exists for downstream consumers comparing against a Stainless-shaped
             // baseline without changing any existing Fern transport semantics.
-            `export class Page<Item> extends AbstractPage<Item> { public items: Item[] = []; public getPaginatedItems(): Item[] { return this.items; } public nextPageParams(): Partial<PageParams> | null { return null; } public nextPageInfo(): PageInfo | null { return null; } }`,
+            `export class Page<Item> extends AbstractPage { public items: Item[] = []; public getPaginatedItems(): Item[] { return this.items; } public nextPageParams(): Partial<PageParams> | null { return null; } public nextPageInfo(): PageInfo | null { return null; } }`,
             `export type PageParams = unknown;`,
             `export type PageResponse<T> = { data: T[] };`,
             `export type PageSession = unknown;`,
