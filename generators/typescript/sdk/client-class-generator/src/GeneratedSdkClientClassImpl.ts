@@ -910,7 +910,17 @@ export class GeneratedSdkClientClassImpl implements GeneratedSdkClientClass {
             `export type RequestOptions<Req = unknown> = unknown;`,
             `export type FinalRequestOptions = unknown;`,
             `export type ClientOptions = unknown;`,
-            `export type APIPromise<T> = Promise<T>;`,
+            // APIPromise mirrors Stainless's `class APIPromise<T> extends Promise<T>`
+            // surface (asResponse/withResponse). It is intentionally a standalone
+            // class - not actually extending Promise - so the generated file does
+            // not need to participate in Stainless's executor/parse plumbing; the
+            // class exists purely so consumers comparing the emitted SDK against a
+            // Stainless-shaped baseline resolve `APIPromise.asResponse` /
+            // `APIPromise.withResponse` with the matching parameter shape.
+            `export class APIPromise<T> {`,
+            `    public async asResponse(): Promise<Response> { return new Response(); }`,
+            `    public async withResponse(): Promise<{ data: T; response: Response }> { return { data: undefined as unknown as T, response: new Response() }; }`,
+            `}`,
             // Auxiliary Stainless-shaped opaque type names so the root SDK module
             // exposes the same broad set of named identifiers a Stainless SDK does.
             // None of these introduce callable surface; they are opaque `unknown`
