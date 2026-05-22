@@ -1024,21 +1024,7 @@ export class GeneratedSdkClientClassImpl implements GeneratedSdkClientClass {
             // \`Queue\` and \`Session\`). Empty bodies — the symbol metric
             // counts the class name; sig parity is perfect (no methods).
             `export class Queue {}`,
-            `export class Session {}`,
-            // Stainless re-exports a set of DOM / runtime "shim" type names
-            // verbatim from its uploads/shims modules (Blob, FormData,
-            // BodyInit, HeadersInit, ResponseInit, ResponseType). Honcho
-            // exports all six; papr exports none. Declaring them as opaque
-            // \`unknown\` aliases in the root file matches the canonical
-            // names without shadowing the DOM types that this file actually
-            // uses by reference (\`Response\`, \`Request\`, \`RequestInit\`,
-            // \`RequestInfo\`, \`AbortController\`, \`URL\`).
-            `export type Blob = unknown;`,
-            `export type FormData = unknown;`,
-            `export type BodyInit = unknown;`,
-            `export type HeadersInit = unknown;`,
-            `export type ResponseInit = unknown;`,
-            `export type ResponseType = unknown;`
+            `export class Session {}`
         ];
         const buildVerbMethod = (methodName: string, httpMethod: string): string =>
             `    public ${methodName}<Rsp>(path: string, opts?: PromiseOrValue<RequestOptions>): APIPromise<Rsp> {\n` +
