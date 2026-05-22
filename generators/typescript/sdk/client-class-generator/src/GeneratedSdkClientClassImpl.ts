@@ -944,30 +944,7 @@ export class GeneratedSdkClientClassImpl implements GeneratedSdkClientClass {
             `export class APIClient {}`,
             `export class AbstractPage {}`,
             `export class BasePage {}`,
-            `export class PagePromise {}`,
-            // Stainless-shaped opaque named types for additional auxiliary surface.
-            `export type Uploadable = unknown;`,
-            `export type LogLevel = unknown;`,
-            `export type Logger = unknown;`,
-            `export type ParsePointer = unknown;`,
-            // Stainless-shaped helper function names (no-op stubs whose only
-            // purpose is to populate the named-export surface with the same
-            // identifiers a Stainless SDK exposes).
-            `export function concatBytes(...args: unknown[]): Uint8Array { void args; return new Uint8Array(); }`,
-            `export function decodeUTF8(...args: unknown[]): string { void args; return ""; }`,
-            `export function encodeUTF8(...args: unknown[]): Uint8Array { void args; return new Uint8Array(); }`,
-            `export function encodeURIPath(...args: unknown[]): string { void args; return ""; }`,
-            `export function getDefaultFetch(...args: unknown[]): unknown { void args; return undefined; }`,
-            `export function hasOwn(...args: unknown[]): boolean { void args; return false; }`,
-            `export function isEmptyObj(...args: unknown[]): boolean { void args; return true; }`,
-            `export function isObj(...args: unknown[]): boolean { void args; return false; }`,
-            `export function maybeObj(...args: unknown[]): unknown { void args; return undefined; }`,
-            `export function stringifyQuery(...args: unknown[]): string { void args; return ""; }`,
-            `export function loggerFor(...args: unknown[]): unknown { void args; return undefined; }`,
-            `export function makeFile(...args: unknown[]): unknown { void args; return undefined; }`,
-            `export function makeReadableStream(...args: unknown[]): unknown { void args; return undefined; }`,
-            `export function ReadableStreamFrom(...args: unknown[]): unknown { void args; return undefined; }`,
-            `export function ReadableStreamToAsyncIterable(...args: unknown[]): unknown { void args; return undefined; }`
+            `export class PagePromise {}`
         ];
         const buildVerbMethod = (methodName: string, httpMethod: string): string =>
             `    public ${methodName}<Rsp>(path: string, opts?: PromiseOrValue<RequestOptions>): APIPromise<Rsp> {\n` +
