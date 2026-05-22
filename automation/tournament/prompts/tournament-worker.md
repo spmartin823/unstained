@@ -47,6 +47,20 @@ Edits inside these paths auto-merge to `main` if you win:
 
 Edits outside this allowlist still let you win the round, but the merge becomes a PR for human review. Don't edit `packages/cli/**`, `test-definitions/**`, `.github/**`, or anywhere else unless you have a specific reason — your win will stall waiting for review.
 
+## 5a. Heartbeats
+
+Every 5-10 minutes, write a one-line status to `.tournament/heartbeat.json` so the daemon can tell you're still working (not stuck or rate-limited). Format:
+
+```json
+{ "t": "2026-05-22T...Z", "status": "investigating openapi importer __package__.yml generation" }
+```
+
+```bash
+date -u +%FT%TZ | jq -Rs --arg s "what I'm currently doing" '{t:.|gsub("\\n";""), status:$s}' > .tournament/heartbeat.json
+```
+
+This is a one-liner, not a strategy doc — the goal is to leave breadcrumbs so a future worker (or the user) can see what was tried and avoid repeating dead ends. Use it.
+
 ## 5. Scoring protocol
 
 The orchestrator runs the eval and ETE for you. You do not run them.
@@ -92,7 +106,11 @@ The first real change wins the round, no matter how small. **A 0.001 lift on one
 
 ### Current state of play (read this carefully)
 
-As of 2026-05-20 ~20:00 UTC, the tournament has plateaued at `t2=0.5175` after two prior generator merges (`package.json` emission, `LICENSE` staging). The breakdown:
+As of 2026-05-22, the tournament has plateaued at `t2≈0.517` after ~5 prior generator merges (package.json emission, LICENSE staging, error subclass aliases). Many workers have hit this plateau across multiple rounds.
+
+**The single highest-leverage move you can make is fixing lumaai. Read the next section before doing anything else.**
+
+The breakdown:
 
 ```
 papr-typescript:    sig=1.0   sym=0.089  file=0.019  struct=0.031   behavioral=null
@@ -103,7 +121,31 @@ lumaai-typescript:  ALL NULL  (Fern OpenAPI importer fails on union types)
 lumaai-python:      ALL NULL  (same)
 ```
 
-**Two big lifts are available.**
+**Two big lifts are available.** The first is much bigger than the second.
+
+### Lift 0 (PRIMARY): Make lumaai generate at all
+
+Both lumaai pairs (lumaai-typescript, lumaai-python) are 0 because Fern's OpenAPI importer fails with 7 errors when processing `stainless-equivalency-eval/baselines/lumaai/fern-input/fern/openapi/openapi.yaml`. Sample failure:
+
+```
+[error] Type AudioGenerationRequest is not defined.
+[error] Type ImageGenerationRequest is not defined.
+[error] Type ModifyVideoRequest is not defined.
+[error] GenerationRequest is already declared in generations.yml
+```
+
+The OpenAPI itself DOES define `AudioGenerationRequest` etc. as `components.schemas.*`. Fern's importer fails to materialize them as Fern types in `__package__.yml` even though they exist in the OpenAPI source.
+
+**This is the entire game.** If you fix it, lumaai-typescript and lumaai-python both go from 0 to ~0.5 each — that's a `+0.17` lift to overall `t2`, vastly more than any symbol-coverage tweak. Not one worker has attempted this yet. **You should.**
+
+Where to look:
+- `packages/cli/api-importers/openapi/openapi-ir/` — the OpenAPI → Fern IR converter
+- Search for how `oneOf` discriminator unions resolve member type references (`grep -rn "oneOf\|discriminator\|GenerationRequest" packages/cli/api-importers/openapi/openapi-ir/src/`)
+- The auto-generated `__package__.yml` in `baselines/lumaai/fern-input/fern/openapi/` shows what Fern thinks the schema is
+
+You don't need to fix the whole importer. You need to find the specific case where a union member's type ref isn't being materialized as a discoverable component and patch that path. The failing path is reproducible deterministically — `cd stainless-equivalency-eval/baselines/lumaai/fern-input && node ../../../../packages/cli/cli/dist/prod/cli.cjs generate --local --group typescript` — so you can iterate fast.
+
+If you make ANY commit that gets lumaai's first metric to be non-null, you have likely already won the round on tier 2. Do not get distracted by symbol-coverage polish until lumaai is unstuck.
 
 ### Lift 1: Match more symbol names on papr (and honcho TS)
 
@@ -129,9 +171,9 @@ Symbol coverage is computed by **exact name match**. Right now Stainless emits 3
 
    Fern emits a smaller set (`BadRequestError`, `NotFoundError`, `UnprocessableEntityError`, `InternalServerError` already match). Emitting per-HTTP-status-code error classes with these specific names + an `APIError` base + an `APIConnectionError` + abort-related helpers would add ~10+ symbol matches per fixture.
 
-### Lift 2: Make lumaai generate at all
+### Lift 2: previously listed lumaai here
 
-Both lumaai pairs are 0 because Fern's OpenAPI importer fails with 7 errors like "Type AudioGenerationRequest is not defined" on lumaai's `__package__.yml`. The root cause is in Fern's OpenAPI importer creating a union (`GenerationRequest`) whose members reference types that the importer didn't materialize as components. Fix candidates live in `packages/cli/api-importers/openapi/openapi-ir/` — look for how `oneOf` discriminator unions resolve member type refs. If you unblock lumaai, you go from 0 → ~0.5 on TWO pairs (lift ~0.17 to overall t2 by itself).
+(See Lift 0 above. Lumaai is the primary target now, not a fallback.)
 
 ### Generator defaults policy (NON-NEGOTIABLE)
 

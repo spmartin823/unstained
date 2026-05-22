@@ -7,6 +7,7 @@ export type AuditEventType =
     | "round_end"
     | "worker_spawned"
     | "worker_exit"
+    | "worker_heartbeat"
     | "scoreme_received"
     | "scoring_start"
     | "scoring_complete"

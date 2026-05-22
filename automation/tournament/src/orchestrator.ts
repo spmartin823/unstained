@@ -304,6 +304,7 @@ class Daemon {
         workers: ReadonlyArray<WorkerState>,
         deadlineMs: number
     ): Promise<void> {
+        const lastHeartbeatAuditedAt = new Map<string, number>();
         while (
             !this.state.shouldStop &&
             Date.now() < deadlineMs + this.config.graceMinutes * 60 * 1000
@@ -311,6 +312,34 @@ class Daemon {
             for (const w of workers) {
                 if (this.state.shouldStop) {
                     break;
+                }
+                // Pick up heartbeat updates so we can audit worker liveness mid-round.
+                const heartbeatPath = join(w.worktree, ".tournament", "heartbeat.json");
+                if (await fileExists(heartbeatPath)) {
+                    try {
+                        const { stat } = await import("node:fs/promises");
+                        const s = await stat(heartbeatPath);
+                        const mtime = s.mtimeMs;
+                        const prev = lastHeartbeatAuditedAt.get(w.id) ?? 0;
+                        if (mtime > prev) {
+                            const { readFile } = await import("node:fs/promises");
+                            const raw = await readFile(heartbeatPath, "utf8");
+                            try {
+                                const hb = JSON.parse(raw) as { t?: string; status?: string };
+                                await this.auditor.log("worker_heartbeat", {
+                                    branch: w.branch,
+                                    worker: w.id,
+                                    t: hb.t,
+                                    status: hb.status
+                                });
+                            } catch {
+                                /* malformed heartbeat — ignore */
+                            }
+                            lastHeartbeatAuditedAt.set(w.id, mtime);
+                        }
+                    } catch {
+                        /* stat race — ignore */
+                    }
                 }
                 const sentinel = join(w.worktree, ".tournament", "scoreme");
                 if (!(await fileExists(sentinel))) {
