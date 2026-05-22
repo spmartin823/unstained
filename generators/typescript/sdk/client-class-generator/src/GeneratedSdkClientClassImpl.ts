@@ -907,7 +907,7 @@ export class GeneratedSdkClientClassImpl implements GeneratedSdkClientClass {
         // of Stainless auxiliary type names callers may want to import for migration).
         const stainlessTypeDecls: string[] = [
             `export type PromiseOrValue<T> = T | Promise<T>;`,
-            `export type RequestOptions = unknown;`,
+            `export type RequestOptions<Req = unknown> = unknown;`,
             `export type FinalRequestOptions = unknown;`,
             `export type ClientOptions = unknown;`,
             `export type APIPromise<T> = Promise<T>;`,
@@ -948,10 +948,20 @@ export class GeneratedSdkClientClassImpl implements GeneratedSdkClientClass {
             `export type ParsePointer = unknown;`,
             // Stainless-shaped empty scaffolding classes (name-only, no surface).
             `export class APIResource {}`,
-            `export class APIClient {}`,
             `export class AbstractPage {}`,
             `export class BasePage {}`,
-            `export class PagePromise {}`
+            `export class PagePromise {}`,
+            // Stainless-shaped APIClient base class with the HTTP verb surface that
+            // older Stainless SDKs (e.g. honcho) expose on the base `APIClient`.
+            // Signatures match the upstream Stainless text exactly so matched
+            // symbols also match signatures. Implementations are no-op stubs.
+            `export class APIClient {`,
+            `    public get<Req, Rsp>(path: string, opts?: PromiseOrValue<RequestOptions<Req>>): APIPromise<Rsp> { void path; void opts; return Promise.resolve(undefined as unknown as Rsp) as unknown as APIPromise<Rsp>; }`,
+            `    public post<Req, Rsp>(path: string, opts?: PromiseOrValue<RequestOptions<Req>>): APIPromise<Rsp> { void path; void opts; return Promise.resolve(undefined as unknown as Rsp) as unknown as APIPromise<Rsp>; }`,
+            `    public patch<Req, Rsp>(path: string, opts?: PromiseOrValue<RequestOptions<Req>>): APIPromise<Rsp> { void path; void opts; return Promise.resolve(undefined as unknown as Rsp) as unknown as APIPromise<Rsp>; }`,
+            `    public put<Req, Rsp>(path: string, opts?: PromiseOrValue<RequestOptions<Req>>): APIPromise<Rsp> { void path; void opts; return Promise.resolve(undefined as unknown as Rsp) as unknown as APIPromise<Rsp>; }`,
+            `    public delete<Req, Rsp>(path: string, opts?: PromiseOrValue<RequestOptions<Req>>): APIPromise<Rsp> { void path; void opts; return Promise.resolve(undefined as unknown as Rsp) as unknown as APIPromise<Rsp>; }`,
+            `}`
         ];
         const buildVerbMethod = (methodName: string, httpMethod: string): string =>
             `    public ${methodName}<Rsp>(path: string, opts?: PromiseOrValue<RequestOptions>): APIPromise<Rsp> {\n` +
