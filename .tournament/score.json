@@ -1,7 +1,7 @@
 {
-  "sha": "23520bca9019ec64a85e6c0a2a72abbf23795c6d",
+  "sha": "988fa38df3df53a83805454e740a2be99ebf8242",
   "branch": "tournament/r19/w03",
-  "scoredAt": "2026-05-22T19:08:39.992Z",
+  "scoredAt": "2026-05-22T19:14:08.871Z",
   "ete": "pass",
   "guardViolation": null,
   "pairs": {
@@ -25,9 +25,9 @@
       "behavioral": null,
       "signatureParity": 0.975,
       "symbolCoverage": 0.3194888178913738,
-      "fileCoverage": 0.17307692307692307,
-      "structural": 0.125,
-      "composite": 0.6131543376751044
+      "fileCoverage": 0.3076923076923077,
+      "structural": 0.21875,
+      "composite": 0.6359908761366428
     },
     "papr-python": {
       "behavioral": null,
@@ -41,9 +41,9 @@
       "behavioral": null,
       "signatureParity": 0.9666666666666667,
       "symbolCoverage": 0.3879310344827586,
-      "fileCoverage": 0.11940298507462686,
-      "structural": 0.022222222222222223,
-      "composite": 0.6138751644078458
+      "fileCoverage": 0.13432835820895522,
+      "structural": 0.08888888888888889,
+      "composite": 0.6220343683879452
     },
     "honcho-python": {
       "behavioral": null,
@@ -66,9 +66,9 @@
     "behavioralMean": 0,
     "signatureMean": 0.9854166666666667,
     "symbolMean": 0.19134846168304367,
-    "fileMean": 0.07311997703788749,
-    "structuralMean": 0.03680555555555556,
+    "fileMean": 0.11050516647531573,
+    "structuralMean": 0.07690972222222223,
     "t1": 0,
-    "t2": 0.5611054250975908
+    "t2": 0.5688543607080002
   }
 }
