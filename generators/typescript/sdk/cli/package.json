@@ -27,7 +27,7 @@
     "compile:debug": "tsc --sourceMap",
     "depcheck": "knip --config ../../../../knip.json --no-config-hints",
     "dist:cli": "node build.mjs",
-    "dockerTagLatest": "docker build -f ./Dockerfile -t fernapi/fern-typescript-node-sdk:latest -t fernapi/fern-typescript-sdk:latest ../../../..",
+    "dockerTagLatest": "pnpm turbo run dist:cli --filter @fern-typescript/sdk-generator-cli && docker build -f ./Dockerfile -t fernapi/fern-typescript-node-sdk:latest -t fernapi/fern-typescript-sdk:latest ../../../..",
     "podmanTagLatest": "podman build -f ./Dockerfile -t fernapi/fern-typescript-node-sdk:latest -t fernapi/fern-typescript-sdk:latest ../../../.."
   },
   "devDependencies": {

@@ -861,6 +861,35 @@ export class GeneratedSdkClientClassImpl implements GeneratedSdkClientClass {
 
         context.sourceFile.addModule(serviceModule);
         context.sourceFile.addClass(serviceClass);
+        this.maybeAddStainlessShapedClassAlias(context);
+    }
+
+    /**
+     * Emit a sibling class declaration whose name strips the conventional
+     * "Client" suffix (and, for the root client, a trailing "Api" segment),
+     * so the generated SDK exposes a Stainless-shaped public class name
+     * (e.g. `Foo` alongside `FooClient`, `Papr` alongside `PaprApiClient`).
+     * The alias subclasses the existing client so callers gain a new symbol
+     * without losing the original class or its members.
+     *
+     * Purely additive: nothing about the existing `*Client` class changes;
+     * the alias is only emitted when the stripped name actually differs and
+     * is non-empty, so generators whose name doesn't end in "Client" are
+     * unaffected.
+     */
+    private maybeAddStainlessShapedClassAlias(context: FileContext): void {
+        const className = this.serviceClassName;
+        let aliasName = className;
+        if (aliasName.endsWith("Client")) {
+            aliasName = aliasName.slice(0, -"Client".length);
+        }
+        if (this.isRoot && aliasName.endsWith("Api") && aliasName.length > "Api".length) {
+            aliasName = aliasName.slice(0, -"Api".length);
+        }
+        if (aliasName.length === 0 || aliasName === className) {
+            return;
+        }
+        context.sourceFile.addStatements([`export class ${aliasName} extends ${className} {}`]);
     }
 
     private getCtorOptionsStatements(context: FileContext): Code {
