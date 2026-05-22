@@ -889,7 +889,54 @@ export class GeneratedSdkClientClassImpl implements GeneratedSdkClientClass {
         if (aliasName.length === 0 || aliasName === className) {
             return;
         }
-        context.sourceFile.addStatements([`export class ${aliasName} extends ${className} {}`]);
+        // For non-root clients the alias is just an empty subclass (a Stainless-shaped name).
+        // For the root client we also expose Stainless-style convenience helpers that delegate
+        // to the existing passthrough fetch method (added above when isRoot). Each helper is a
+        // thin wrapper that sets an HTTP method on RequestInit, so they all behave like
+        // `this.fetch(...)` with a fixed method — no new transport surface, just additional
+        // names for the same passthrough so callers used to a Stainless-shaped client can
+        // resolve `client.get(url)`, `client.post(url, init)`, etc.
+        if (!this.isRoot) {
+            context.sourceFile.addStatements([`export class ${aliasName} extends ${className} {}`]);
+            return;
+        }
+        const buildVerbMethod = (methodName: string, httpMethod: string): string =>
+            `    public async ${methodName}(input: Request | string | URL, init?: RequestInit, requestOptions?: core.PassthroughRequest.RequestOptions): Promise<Response> {\n` +
+            `        return this.fetch(input, { ...(init ?? {}), method: "${httpMethod}" }, requestOptions);\n` +
+            `    }`;
+        const aliasBodyLines: string[] = [
+            `    public async request(input: Request | string | URL, init?: RequestInit, requestOptions?: core.PassthroughRequest.RequestOptions): Promise<Response> {`,
+            `        return this.fetch(input, init, requestOptions);`,
+            `    }`,
+            buildVerbMethod("get", "GET"),
+            buildVerbMethod("post", "POST"),
+            buildVerbMethod("put", "PUT"),
+            buildVerbMethod("patch", "PATCH"),
+            buildVerbMethod("delete", "DELETE"),
+            `    public buildRequest(input: Request | string | URL, init?: RequestInit): Request {`,
+            `        return new Request(input as unknown as RequestInfo, init);`,
+            `    }`,
+            `    public buildURL(input: string | URL): URL {`,
+            `        if (input instanceof URL) {`,
+            `            return input;`,
+            `        }`,
+            `        try {`,
+            `            return new URL(input);`,
+            `        } catch {`,
+            `            return new URL(input, "http://localhost/");`,
+            `        }`,
+            `    }`,
+            `    public async fetchWithTimeout(input: Request | string | URL, init?: RequestInit, timeoutSeconds?: number): Promise<Response> {`,
+            `        return this.fetch(input, init, timeoutSeconds != null ? { timeoutInSeconds: timeoutSeconds } : undefined);`,
+            `    }`,
+            `    public withOptions(options: Record<string, unknown>): this {`,
+            `        const Ctor = this.constructor as unknown as new (opts: unknown) => this;`,
+            `        return new Ctor({ ...(this._options as unknown as Record<string, unknown>), ...options });`,
+            `    }`
+        ];
+        context.sourceFile.addStatements([
+            `export class ${aliasName} extends ${className} {\n${aliasBodyLines.join("\n")}\n}`
+        ]);
     }
 
     private getCtorOptionsStatements(context: FileContext): Code {
