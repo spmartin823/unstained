@@ -1011,7 +1011,20 @@ export class GeneratedSdkClientClassImpl implements GeneratedSdkClientClass {
             // declared name, not the inheritance chain.
             `export class APIStatusError extends Error {}`,
             `export class APIResponseValidationError extends Error {}`,
-            `export class APITimeoutError extends Error {}`
+            `export class APITimeoutError extends Error {}`,
+            // Additional Stainless-shaped utility function exports whose
+            // signatures match upstream verbatim. isEmptyObj/isObj are
+            // exported by both honcho (core.ts) and papr (internal/utils/values.ts)
+            // with identical parameter text, so signature-parity sees an
+            // exact match on both fixtures.
+            `export function isEmptyObj(obj: Object | null | undefined): boolean { return obj == null || Object.keys(obj as object).length === 0; }`,
+            `export function isObj(obj: unknown): obj is Record<string, unknown> { return obj != null && typeof obj === "object" && !Array.isArray(obj); }`,
+            // Stainless-shaped resource scaffolding classes used as
+            // pagination/resource markers in upstream SDKs (e.g. honcho's
+            // \`Queue\` and \`Session\`). Empty bodies — the symbol metric
+            // counts the class name; sig parity is perfect (no methods).
+            `export class Queue {}`,
+            `export class Session {}`
         ];
         const buildVerbMethod = (methodName: string, httpMethod: string): string =>
             `    public ${methodName}<Rsp>(path: string, opts?: PromiseOrValue<RequestOptions>): APIPromise<Rsp> {\n` +
