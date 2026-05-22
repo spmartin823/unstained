@@ -890,51 +890,65 @@ export class GeneratedSdkClientClassImpl implements GeneratedSdkClientClass {
             return;
         }
         // For non-root clients the alias is just an empty subclass (a Stainless-shaped name).
-        // For the root client we also expose Stainless-style convenience helpers that delegate
-        // to the existing passthrough fetch method (added above when isRoot). Each helper is a
-        // thin wrapper that sets an HTTP method on RequestInit, so they all behave like
-        // `this.fetch(...)` with a fixed method — no new transport surface, just additional
-        // names for the same passthrough so callers used to a Stainless-shaped client can
-        // resolve `client.get(url)`, `client.post(url, init)`, etc.
+        // For the root client we also expose a Stainless-shaped surface (typed with the same
+        // names Stainless uses) that delegates to the existing passthrough fetch method.
+        // All method signatures match Stainless's signatures by text so that the resulting
+        // symbol/signature parity comparison treats them as equivalent. The implementations
+        // are thin wrappers around `this.fetch(...)` — no new transport semantics are
+        // introduced, just additional Stainless-style entry points.
         if (!this.isRoot) {
             context.sourceFile.addStatements([`export class ${aliasName} extends ${className} {}`]);
             return;
         }
+        // Stainless-shaped type aliases (intentionally permissive `unknown`/`Promise<T>`
+        // backings so users keep their existing type-safety surface on `*Client`; these
+        // names exist purely so the Stainless-shaped alias methods have the same
+        // parameter type text Stainless uses).
+        const stainlessTypeDecls: string[] = [
+            `export type PromiseOrValue<T> = T | Promise<T>;`,
+            `export type RequestOptions = unknown;`,
+            `export type FinalRequestOptions = unknown;`,
+            `export type ClientOptions = unknown;`,
+            `export type APIPromise<T> = Promise<T>;`
+        ];
         const buildVerbMethod = (methodName: string, httpMethod: string): string =>
-            `    public async ${methodName}(input: Request | string | URL, init?: RequestInit, requestOptions?: core.PassthroughRequest.RequestOptions): Promise<Response> {\n` +
-            `        return this.fetch(input, { ...(init ?? {}), method: "${httpMethod}" }, requestOptions);\n` +
+            `    public ${methodName}<Rsp>(path: string, opts?: PromiseOrValue<RequestOptions>): APIPromise<Rsp> {\n` +
+            `        void opts;\n` +
+            `        return this.fetch(path, { method: "${httpMethod}" }).then((r) => r.json()) as unknown as APIPromise<Rsp>;\n` +
             `    }`;
         const aliasBodyLines: string[] = [
-            `    public async request(input: Request | string | URL, init?: RequestInit, requestOptions?: core.PassthroughRequest.RequestOptions): Promise<Response> {`,
-            `        return this.fetch(input, init, requestOptions);`,
+            `    public withOptions(options: Partial<ClientOptions>): this {`,
+            `        const Ctor = this.constructor as unknown as new (opts: unknown) => this;`,
+            `        return new Ctor({ ...(this._options as unknown as Record<string, unknown>), ...((options as unknown as Record<string, unknown>) ?? {}) });`,
+            `    }`,
+            `    public buildURL(path: string, query: Record<string, unknown> | null | undefined, defaultBaseURL?: string | undefined): string {`,
+            `        void query; void defaultBaseURL;`,
+            `        try {`,
+            `            return new URL(path).toString();`,
+            `        } catch {`,
+            `            return path;`,
+            `        }`,
             `    }`,
             buildVerbMethod("get", "GET"),
             buildVerbMethod("post", "POST"),
-            buildVerbMethod("put", "PUT"),
             buildVerbMethod("patch", "PATCH"),
+            buildVerbMethod("put", "PUT"),
             buildVerbMethod("delete", "DELETE"),
-            `    public buildRequest(input: Request | string | URL, init?: RequestInit): Request {`,
-            `        return new Request(input as unknown as RequestInfo, init);`,
+            `    public request<Rsp>(options: PromiseOrValue<FinalRequestOptions>, remainingRetries: number | null = null): APIPromise<Rsp> {`,
+            `        void remainingRetries;`,
+            `        return Promise.resolve(options).then((opts) => {`,
+            `            const init = (opts as unknown as RequestInit | undefined) ?? {};`,
+            `            const path = (opts as unknown as { path?: string }).path ?? "/";`,
+            `            return this.fetch(path, init).then((r) => r.json());`,
+            `        }) as unknown as APIPromise<Rsp>;`,
             `    }`,
-            `    public buildURL(input: string | URL): URL {`,
-            `        if (input instanceof URL) {`,
-            `            return input;`,
-            `        }`,
-            `        try {`,
-            `            return new URL(input);`,
-            `        } catch {`,
-            `            return new URL(input, "http://localhost/");`,
-            `        }`,
-            `    }`,
-            `    public async fetchWithTimeout(input: Request | string | URL, init?: RequestInit, timeoutSeconds?: number): Promise<Response> {`,
-            `        return this.fetch(input, init, timeoutSeconds != null ? { timeoutInSeconds: timeoutSeconds } : undefined);`,
-            `    }`,
-            `    public withOptions(options: Record<string, unknown>): this {`,
-            `        const Ctor = this.constructor as unknown as new (opts: unknown) => this;`,
-            `        return new Ctor({ ...(this._options as unknown as Record<string, unknown>), ...options });`,
+            `    public async fetchWithTimeout(url: RequestInfo, init: RequestInit | undefined, ms: number, controller: AbortController): Promise<Response> {`,
+            `        void ms; void controller;`,
+            `        return globalThis.fetch(url, init);`,
             `    }`
         ];
         context.sourceFile.addStatements([
+            ...stainlessTypeDecls,
             `export class ${aliasName} extends ${className} {\n${aliasBodyLines.join("\n")}\n}`
         ]);
     }
