@@ -939,6 +939,13 @@ export class GeneratedSdkClientClassImpl implements GeneratedSdkClientClass {
             `export type _HeadersInit = unknown;`,
             `export type _BodyInit = unknown;`,
             `export type _ReadableStream = unknown;`,
+            // Additional Stainless-shaped opaque type names (each is a type in
+            // upstream Stainless too, so the matched-symbol-signature comparison
+            // sees them as zero-param symbols on both sides).
+            `export type Uploadable = unknown;`,
+            `export type LogLevel = unknown;`,
+            `export type Logger = unknown;`,
+            `export type ParsePointer = unknown;`,
             // Stainless-shaped empty scaffolding classes (name-only, no surface).
             `export class APIResource {}`,
             `export class APIClient {}`,
