@@ -1,0 +1,7 @@
+- summary: |
+    Fix OpenAPI import failure when an inferred discriminated union has a synthesized name
+    that collides with one of its own variant schema names (e.g. a `oneOf` whose first member
+    is itself a top-level schema with the same generated name). The importer now disambiguates
+    the synthesized name and keeps variant schemas declared as top-level types so union
+    member references resolve.
+  type: fix

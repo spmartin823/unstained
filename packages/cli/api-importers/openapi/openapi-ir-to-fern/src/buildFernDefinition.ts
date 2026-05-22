@@ -173,6 +173,20 @@ export function buildFernDefinition(context: OpenApiIrConverterContext): FernDef
         schemaIdsToExcludeFromServices: convertedServices.schemaIdsToExclude
     });
 
+    // Schemas referenced as variants of a discriminated union must remain declared as
+    // top-level types so the union's references resolve. If such a schema is also used
+    // as a request body, the service-level exclusion would otherwise drop its declaration,
+    // producing "Type X is not defined" errors during validation.
+    const allSchemaIds = [
+        ...Object.keys(context.ir.groupedSchemas.rootSchemas),
+        ...Object.values(context.ir.groupedSchemas.namespacedSchemas).flatMap((schemas) => Object.keys(schemas))
+    ];
+    for (const id of allSchemaIds) {
+        if (context.isDiscriminatedUnionVariant(id)) {
+            schemaIdsToExclude.delete(id);
+        }
+    }
+
     // Compute reachability-based variant plan for readonly schema handling
     if (context.options.respectReadonlySchemas) {
         const reachability = computeSchemaReachability(context.ir);

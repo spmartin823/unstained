@@ -520,11 +520,14 @@ function getRequest({
         const resolvedSchema =
             request.schema.type === "reference" ? context.getSchema(request.schema.schema, namespace) : request.schema;
 
-        // the request body is referenced if it is not an object or if other parts of the spec
-        // refer to the same type
+        // the request body is referenced if it is not an object, if other parts of the spec
+        // refer to the same type, or if this schema is a variant of a discriminated union.
+        // Variants must keep their top-level declarations so union member references resolve;
+        // inlining them as request body properties would drop the declaration the union needs.
         if (
             resolvedSchema?.type !== "object" ||
-            (maybeSchemaId != null && context.isResponseReachable(maybeSchemaId))
+            (maybeSchemaId != null &&
+                (context.isResponseReachable(maybeSchemaId) || context.isDiscriminatedUnionVariant(maybeSchemaId)))
         ) {
             // When respectReadonlySchemas is enabled on a write endpoint, resolve schema
             // references to the write variant (without readOnly properties)

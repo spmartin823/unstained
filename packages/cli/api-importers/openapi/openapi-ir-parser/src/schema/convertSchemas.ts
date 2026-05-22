@@ -379,7 +379,25 @@ export function convertSchemaObject(
     let groupName: SdkGroupName = (typeof mixedGroupName === "string" ? [mixedGroupName] : mixedGroupName) ?? [];
     groupName = context.resolveGroupName(groupName);
 
-    const generatedName = getGeneratedTypeName(breadcrumbs, context.options.preserveSchemaIds);
+    let generatedName = getGeneratedTypeName(breadcrumbs, context.options.preserveSchemaIds);
+    // When a oneOf/anyOf is at a property position (e.g. Generation.request), the synthesized
+    // union name derived from breadcrumbs ("GenerationRequest") can collide with one of its
+    // own variant schema names. That produces "already declared" errors (discriminated unions)
+    // or infinite type recursion (undiscriminated unions). Disambiguate by appending a suffix.
+    if (nameOverride == null) {
+        const oneOfVariants = schema.oneOf ?? schema.anyOf;
+        if (oneOfVariants != null && oneOfVariants.length > 0) {
+            const collides = oneOfVariants.some((variant) => {
+                if (isReferenceObject(variant)) {
+                    return getSchemaIdFromReference(variant) === generatedName;
+                }
+                return false;
+            });
+            if (collides) {
+                generatedName = `${generatedName}Variant`;
+            }
+        }
+    }
     const title = schema.title;
     const description = schema.description;
     const availability = convertAvailability(schema);
@@ -1124,7 +1142,11 @@ export function convertSchemaObject(
                 const maybeDiscriminant = getDiscriminant({ schemas: schema.oneOf, context });
                 if (
                     maybeDiscriminant != null &&
-                    (isDiscriminated === true || (!context.options.discriminatedUnionV2 && !isUndiscriminated))
+                    (isDiscriminated === true || (!context.options.discriminatedUnionV2 && !isUndiscriminated)) &&
+                    !discriminantUnionNameCollidesWithVariant({
+                        synthesizedName: nameOverride ?? generatedName,
+                        variants: maybeDiscriminant.schemas
+                    })
                 ) {
                     return convertDiscriminatedOneOfWithVariants({
                         nameOverride,
@@ -1873,6 +1895,34 @@ function getMaybeAllEnumValues({
         }
     }
     return Array.from(enumValues);
+}
+
+/**
+ * Returns true if the synthesized name for an inferred discriminated union collides
+ * with one of its own variant schema names. When this happens, declaring both the
+ * union and the variant under the same name produces "X is already declared" errors
+ * in the Fern definition validator. Callers should fall back to an undiscriminated
+ * union in that case.
+ */
+function discriminantUnionNameCollidesWithVariant({
+    synthesizedName,
+    variants
+}: {
+    synthesizedName: string | undefined;
+    variants: Record<string, OpenAPIV3.SchemaObject | OpenAPIV3.ReferenceObject>;
+}): boolean {
+    if (synthesizedName == null) {
+        return false;
+    }
+    for (const variant of Object.values(variants)) {
+        if (isReferenceObject(variant)) {
+            const variantId = getSchemaIdFromReference(variant);
+            if (variantId === synthesizedName) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 function getDiscriminant({

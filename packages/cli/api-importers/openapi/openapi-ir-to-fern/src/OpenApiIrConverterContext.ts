@@ -86,6 +86,13 @@ export class OpenApiIrConverterContext {
      */
     private reachability: SchemaReachability | undefined;
 
+    /**
+     * Lazily-computed set of schema IDs that appear as variants of a discriminated union
+     * somewhere in the IR. Used to keep those schemas declared as top-level types and
+     * referenced (not inlined) from request bodies, so that union member lookups resolve.
+     */
+    private discriminatedUnionVariantIds: Set<SchemaId> | undefined;
+
     constructor({
         taskContext,
         ir,
@@ -136,6 +143,65 @@ export class OpenApiIrConverterContext {
             return undefined;
         }
         return Array.from(this.referencedSchemaIds);
+    }
+
+    /**
+     * Returns true if the given schema ID appears as a variant of a discriminated union
+     * anywhere in the IR. Such schemas must remain declared as top-level types and must
+     * not be inlined when used as request bodies, otherwise union member references will
+     * not resolve during Fern definition validation.
+     */
+    public isDiscriminatedUnionVariant(id: SchemaId): boolean {
+        if (this.discriminatedUnionVariantIds == null) {
+            this.discriminatedUnionVariantIds = this.collectDiscriminatedUnionVariantIds();
+        }
+        return this.discriminatedUnionVariantIds.has(id);
+    }
+
+    private collectDiscriminatedUnionVariantIds(): Set<SchemaId> {
+        const variantIds = new Set<SchemaId>();
+        const visit = (schema: Schema): void => {
+            switch (schema.type) {
+                case "object":
+                    for (const property of schema.properties) {
+                        visit(property.schema);
+                    }
+                    return;
+                case "array":
+                case "map":
+                    visit(schema.value);
+                    return;
+                case "optional":
+                case "nullable":
+                    visit(schema.value);
+                    return;
+                case "oneOf":
+                    if (schema.value.type === "discriminated") {
+                        for (const member of Object.values(schema.value.schemas)) {
+                            if (member.type === "reference") {
+                                variantIds.add(member.schema);
+                            }
+                            visit(member);
+                        }
+                    } else {
+                        for (const member of schema.value.schemas) {
+                            visit(member);
+                        }
+                    }
+                    return;
+                default:
+                    return;
+            }
+        };
+        for (const schema of Object.values(this.ir.groupedSchemas.rootSchemas)) {
+            visit(schema);
+        }
+        for (const schemas of Object.values(this.ir.groupedSchemas.namespacedSchemas)) {
+            for (const schema of Object.values(schemas)) {
+                visit(schema);
+            }
+        }
+        return variantIds;
     }
 
     public getSchema(id: SchemaId, namespace: string | undefined): Schema | undefined {
