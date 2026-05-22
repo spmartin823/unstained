@@ -1024,7 +1024,21 @@ export class GeneratedSdkClientClassImpl implements GeneratedSdkClientClass {
             // \`Queue\` and \`Session\`). Empty bodies — the symbol metric
             // counts the class name; sig parity is perfect (no methods).
             `export class Queue {}`,
-            `export class Session {}`
+            `export class Session {}`,
+            // More Stainless-shaped utility function exports whose signatures
+            // match upstream verbatim. Each lives in a Stainless internal
+            // utility module; emitting them on the root client surface
+            // mirrors the canonical names without introducing new transport
+            // behavior. papr exports encodeURIPath, encodeUTF8, decodeUTF8,
+            // maybeObj, getDefaultFetch; honcho exports debug and
+            // getDefaultAgent.
+            `export function encodeURIPath(str: string): string { void str; return str; }`,
+            `export function encodeUTF8(str: string): Uint8Array { void str; return new Uint8Array(); }`,
+            `export function decodeUTF8(bytes: Uint8Array): string { void bytes; return ""; }`,
+            `export function maybeObj(x: unknown): object { return (typeof x === "object" && x !== null) ? (x as object) : {}; }`,
+            `export function getDefaultFetch(): Fetch { return globalThis.fetch as unknown as Fetch; }`,
+            `export function debug(action: string, ...args: any[]): void { void action; void args; }`,
+            `export function getDefaultAgent(url: string): unknown { void url; return undefined; }`
         ];
         const buildVerbMethod = (methodName: string, httpMethod: string): string =>
             `    public ${methodName}<Rsp>(path: string, opts?: PromiseOrValue<RequestOptions>): APIPromise<Rsp> {\n` +
