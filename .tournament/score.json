@@ -1,0 +1,74 @@
+{
+  "sha": "946143fbca3879c4f8f744cedd49283c54c8acb2",
+  "branch": "tournament/r19/w03",
+  "scoredAt": "2026-05-22T18:59:05.519Z",
+  "ete": "pass",
+  "guardViolation": null,
+  "pairs": {
+    "lumaai-typescript": {
+      "behavioral": null,
+      "signatureParity": null,
+      "symbolCoverage": null,
+      "fileCoverage": null,
+      "structural": null,
+      "composite": null
+    },
+    "lumaai-python": {
+      "behavioral": null,
+      "signatureParity": null,
+      "symbolCoverage": null,
+      "fileCoverage": null,
+      "structural": null,
+      "composite": null
+    },
+    "papr-typescript": {
+      "behavioral": null,
+      "signatureParity": 0.975,
+      "symbolCoverage": 0.3194888178913738,
+      "fileCoverage": 0.028846153846153848,
+      "structural": 0.03125,
+      "composite": 0.5893562607520275
+    },
+    "papr-python": {
+      "behavioral": null,
+      "signatureParity": 1,
+      "symbolCoverage": 0.027823240589198037,
+      "fileCoverage": 0,
+      "structural": 0,
+      "composite": 0.5083469721767594
+    },
+    "honcho-typescript": {
+      "behavioral": null,
+      "signatureParity": 0.9666666666666667,
+      "symbolCoverage": 0.3879310344827586,
+      "fileCoverage": 0.029850746268656716,
+      "structural": 0,
+      "composite": 0.6026977183050266
+    },
+    "honcho-python": {
+      "behavioral": null,
+      "signatureParity": 1,
+      "symbolCoverage": 0.03015075376884422,
+      "fileCoverage": 0,
+      "structural": 0,
+      "composite": 0.5090452261306533
+    }
+  },
+  "aggregates": {
+    "behavioralValues": [
+      null,
+      null,
+      null,
+      null,
+      null,
+      null
+    ],
+    "behavioralMean": 0,
+    "signatureMean": 0.9854166666666667,
+    "symbolMean": 0.19134846168304367,
+    "fileMean": 0.01467422502870264,
+    "structuralMean": 0.0078125,
+    "t1": 0,
+    "t2": 0.5523615443411166
+  }
+}
