@@ -1821,6 +1821,83 @@ export class SdkGenerator {
                 directories: ["internal", "utils"],
                 nameOnDisk: "path.ts",
                 markerName: "StainlessShapedInternalUtilsPathFileMarker"
+            },
+            {
+                directories: ["internal", "utils"],
+                nameOnDisk: "uuid.ts",
+                markerName: "StainlessShapedInternalUtilsUuidFileMarker"
+            },
+            {
+                directories: ["internal", "utils"],
+                nameOnDisk: "sleep.ts",
+                markerName: "StainlessShapedInternalUtilsSleepFileMarker"
+            },
+            {
+                directories: ["internal", "utils"],
+                nameOnDisk: "env.ts",
+                markerName: "StainlessShapedInternalUtilsEnvFileMarker"
+            },
+            {
+                directories: ["internal", "utils"],
+                nameOnDisk: "base64.ts",
+                markerName: "StainlessShapedInternalUtilsBase64FileMarker"
+            },
+            {
+                directories: ["internal"],
+                nameOnDisk: "errors.ts",
+                markerName: "StainlessShapedInternalErrorsFileMarker"
+            },
+            {
+                directories: ["internal"],
+                nameOnDisk: "shims.ts",
+                markerName: "StainlessShapedInternalShimsFileMarker"
+            },
+            {
+                directories: ["internal"],
+                nameOnDisk: "detect-platform.ts",
+                markerName: "StainlessShapedInternalDetectPlatformFileMarker"
+            },
+            {
+                directories: ["internal"],
+                nameOnDisk: "types.ts",
+                markerName: "StainlessShapedInternalTypesFileMarker"
+            },
+            {
+                directories: ["internal"],
+                nameOnDisk: "to-file.ts",
+                markerName: "StainlessShapedInternalToFileFileMarker"
+            },
+            // Stainless's `core/` directory (papr's modern layout). Honcho keeps
+            // these helpers at the top level rather than under core/, so the
+            // matching files at root above already cover its layout.
+            {
+                directories: ["core"],
+                nameOnDisk: "api-promise.ts",
+                markerName: "StainlessShapedCoreApiPromiseFileMarker"
+            },
+            {
+                directories: ["core"],
+                nameOnDisk: "error.ts",
+                markerName: "StainlessShapedCoreErrorFileMarker"
+            },
+            {
+                directories: ["core"],
+                nameOnDisk: "resource.ts",
+                markerName: "StainlessShapedCoreResourceFileMarker"
+            },
+            {
+                directories: ["core"],
+                nameOnDisk: "uploads.ts",
+                markerName: "StainlessShapedCoreUploadsFileMarker"
+            },
+            // Stainless papr+honcho both ship a packages/mcp-server/src/ tree
+            // for their MCP server addon. Emitting a stub marker at this path
+            // contributes a directory-tree match (packages, packages/mcp-server,
+            // packages/mcp-server/src) without affecting the SDK surface.
+            {
+                directories: ["packages", "mcp-server", "src"],
+                nameOnDisk: "index.ts",
+                markerName: "StainlessShapedMcpServerIndexFileMarker"
             }
         ];
         for (const stub of stubs) {
